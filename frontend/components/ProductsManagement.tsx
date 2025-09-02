@@ -196,10 +196,8 @@ function ProductsManagementContent() {
   };
 
   const handleProductUpload = async (file: File) => {
-    const response = await backend.uploads.uploadProduct();
-    
-    // Since uploadProduct expects the file in the request body, we need to call it differently
-    const uploadResponse = await fetch("/api/uploads/product", {
+    // Make a direct fetch request to the upload endpoint with the file as the body
+    const response = await fetch("/api/uploads/product", {
       method: "POST",
       body: file,
       headers: {
@@ -207,12 +205,12 @@ function ProductsManagementContent() {
       },
     });
 
-    if (!uploadResponse.ok) {
-      const error = await uploadResponse.text();
+    if (!response.ok) {
+      const error = await response.text();
       throw new Error(error || "Upload failed");
     }
 
-    return await uploadResponse.json();
+    return await response.json();
   };
 
   const handlePreviewUpload = async (file: File) => {
