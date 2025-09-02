@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, Users, DollarSign, MessageSquare, ExternalLink } from "lucide-react";
+import { BarChart3, MessageSquare, ExternalLink } from "lucide-react";
 import { StatsLoadingSkeleton, CardLoadingSkeleton } from "./LoadingSkeleton";
-import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
 import backend from "~backend/client";
 
@@ -62,13 +61,9 @@ function AnalyticsContent() {
 
   const stats = statsQuery.data;
 
-  const formatCurrency = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
-
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Link Clicks</CardTitle>
@@ -76,19 +71,6 @@ function AnalyticsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalLinkClicks.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPurchases}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(stats.totalRevenueCents)} revenue
-            </p>
           </CardContent>
         </Card>
 
@@ -106,19 +88,9 @@ function AnalyticsContent() {
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenueCents)}</div>
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Top Performing Links</CardTitle>
@@ -141,38 +113,12 @@ function AnalyticsContent() {
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Selling Products</CardTitle>
-            <CardDescription>Best performing products</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {stats.topProducts.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No sales yet</p>
-            ) : (
-              <div className="space-y-3">
-                {stats.topProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between">
-                    <div className="truncate">
-                      <div className="font-medium">{product.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatCurrency(product.revenueCents)} revenue
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{product.purchaseCount} sales</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest purchases and guest messages</CardDescription>
+          <CardDescription>Latest guest messages</CardDescription>
         </CardHeader>
         <CardContent>
           {stats.recentActivity.length === 0 ? (
@@ -182,11 +128,7 @@ function AnalyticsContent() {
               {stats.recentActivity.map((activity, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {activity.type === "purchase" ? (
-                      <DollarSign className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <MessageSquare className="h-4 w-4 text-blue-500" />
-                    )}
+                    <MessageSquare className="h-4 w-4 text-blue-500" />
                     <span className="text-sm">{activity.description}</span>
                   </div>
                   <span className="text-xs text-muted-foreground">

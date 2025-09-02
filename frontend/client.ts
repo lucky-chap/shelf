@@ -38,9 +38,6 @@ export class Client {
     public readonly config: config.ServiceClient
     public readonly guestbook: guestbook.ServiceClient
     public readonly links: links.ServiceClient
-    public readonly payments: payments.ServiceClient
-    public readonly products: products.ServiceClient
-    public readonly purchases: purchases.ServiceClient
     public readonly site: site.ServiceClient
     public readonly users: users.ServiceClient
     private readonly options: ClientOptions
@@ -62,9 +59,6 @@ export class Client {
         this.config = new config.ServiceClient(base)
         this.guestbook = new guestbook.ServiceClient(base)
         this.links = new links.ServiceClient(base)
-        this.payments = new payments.ServiceClient(base)
-        this.products = new products.ServiceClient(base)
-        this.purchases = new purchases.ServiceClient(base)
         this.site = new site.ServiceClient(base)
         this.users = new users.ServiceClient(base)
     }
@@ -113,7 +107,7 @@ export namespace analytics {
         }
 
         /**
-         * Retrieves analytics statistics.
+         * Retrieves analytics statistics (store data excluded).
          */
         public async getStats(): Promise<ResponseType<typeof api_analytics_get_stats_getStats>> {
             // Now make the actual call to the API
@@ -412,162 +406,6 @@ export namespace links {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/links/${encodeURIComponent(params.id)}`, {method: "PUT", body: JSON.stringify(body)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_links_update_update>
-        }
-    }
-}
-
-/**
- * Import the endpoint handlers to derive the types for the client.
- */
-import { createIntent as api_payments_create_intent_createIntent } from "~backend/payments/create_intent";
-import { getPurchase as api_payments_get_purchase_getPurchase } from "~backend/payments/get_purchase";
-import { webhook as api_payments_webhook_webhook } from "~backend/payments/webhook";
-
-export namespace payments {
-
-    export class ServiceClient {
-        private baseClient: BaseClient
-
-        constructor(baseClient: BaseClient) {
-            this.baseClient = baseClient
-            this.createIntent = this.createIntent.bind(this)
-            this.getPurchase = this.getPurchase.bind(this)
-            this.webhook = this.webhook.bind(this)
-        }
-
-        /**
-         * Creates a Stripe payment intent for a product purchase.
-         */
-        public async createIntent(params: RequestType<typeof api_payments_create_intent_createIntent>): Promise<ResponseType<typeof api_payments_create_intent_createIntent>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/payments/create-intent`, {method: "POST", body: JSON.stringify(params)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_payments_create_intent_createIntent>
-        }
-
-        /**
-         * Retrieves purchase details by payment intent ID.
-         */
-        public async getPurchase(params: { paymentIntentId: string }): Promise<ResponseType<typeof api_payments_get_purchase_getPurchase>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/payments/purchase/${encodeURIComponent(params.paymentIntentId)}`, {method: "GET", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_payments_get_purchase_getPurchase>
-        }
-
-        /**
-         * Handles Stripe webhook events for payment processing.
-         */
-        public async webhook(params: RequestType<typeof api_payments_webhook_webhook>): Promise<ResponseType<typeof api_payments_webhook_webhook>> {
-            // Convert our params into the objects we need for the request
-            const headers = makeRecord<string, string>({
-                "stripe-signature": params.stripeSignature,
-            })
-
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/payments/webhook`, {headers, method: "POST", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_payments_webhook_webhook>
-        }
-    }
-}
-
-/**
- * Import the endpoint handlers to derive the types for the client.
- */
-import { create as api_products_create_create } from "~backend/products/create";
-import { deleteFn as api_products_delete_deleteFn } from "~backend/products/delete";
-import { list as api_products_list_list } from "~backend/products/list";
-import { update as api_products_update_update } from "~backend/products/update";
-
-export namespace products {
-
-    export class ServiceClient {
-        private baseClient: BaseClient
-
-        constructor(baseClient: BaseClient) {
-            this.baseClient = baseClient
-            this.create = this.create.bind(this)
-            this.deleteFn = this.deleteFn.bind(this)
-            this.list = this.list.bind(this)
-            this.update = this.update.bind(this)
-        }
-
-        /**
-         * Creates a new product.
-         */
-        public async create(params: RequestType<typeof api_products_create_create>): Promise<ResponseType<typeof api_products_create_create>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/products`, {method: "POST", body: JSON.stringify(params)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_create_create>
-        }
-
-        /**
-         * Deletes a product.
-         */
-        public async deleteFn(params: { id: number }): Promise<void> {
-            await this.baseClient.callTypedAPI(`/products/${encodeURIComponent(params.id)}`, {method: "DELETE", body: undefined})
-        }
-
-        /**
-         * Retrieves all active products.
-         */
-        public async list(): Promise<ResponseType<typeof api_products_list_list>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/products`, {method: "GET", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_list_list>
-        }
-
-        /**
-         * Updates an existing product.
-         */
-        public async update(params: RequestType<typeof api_products_update_update>): Promise<ResponseType<typeof api_products_update_update>> {
-            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
-            const body: Record<string, any> = {
-                description:     params.description,
-                downloadUrl:     params.downloadUrl,
-                previewImageUrl: params.previewImageUrl,
-                priceCents:      params.priceCents,
-                title:           params.title,
-            }
-
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/products/${encodeURIComponent(params.id)}`, {method: "PUT", body: JSON.stringify(body)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_update_update>
-        }
-    }
-}
-
-/**
- * Import the endpoint handlers to derive the types for the client.
- */
-import { create as api_purchases_create_create } from "~backend/purchases/create";
-import { download as api_purchases_download_download } from "~backend/purchases/download";
-
-export namespace purchases {
-
-    export class ServiceClient {
-        private baseClient: BaseClient
-
-        constructor(baseClient: BaseClient) {
-            this.baseClient = baseClient
-            this.create = this.create.bind(this)
-            this.download = this.download.bind(this)
-        }
-
-        /**
-         * Creates a new purchase record after successful payment.
-         */
-        public async create(params: RequestType<typeof api_purchases_create_create>): Promise<ResponseType<typeof api_purchases_create_create>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/purchases`, {method: "POST", body: JSON.stringify(params)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_purchases_create_create>
-        }
-
-        /**
-         * Validates a download token and returns the download URL.
-         */
-        public async download(params: { token: string }): Promise<ResponseType<typeof api_purchases_download_download>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/purchases/download/${encodeURIComponent(params.token)}`, {method: "GET", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_purchases_download_download>
         }
     }
 }
