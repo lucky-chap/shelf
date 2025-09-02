@@ -61,6 +61,10 @@ function AnalyticsContent() {
 
   const stats = statsQuery.data;
 
+  // Ensure arrays exist and provide fallbacks
+  const topLinks = stats.topLinks || [];
+  const recentActivity = stats.recentActivity || [];
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
@@ -70,7 +74,7 @@ function AnalyticsContent() {
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalLinkClicks.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{(stats.totalLinkClicks || 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -80,8 +84,8 @@ function AnalyticsContent() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalGuestEntries}</div>
-            {stats.pendingGuestEntries > 0 && (
+            <div className="text-2xl font-bold">{(stats.totalGuestEntries || 0)}</div>
+            {(stats.pendingGuestEntries || 0) > 0 && (
               <Badge variant="secondary" className="mt-1">
                 {stats.pendingGuestEntries} pending
               </Badge>
@@ -97,11 +101,11 @@ function AnalyticsContent() {
             <CardDescription>Most clicked links</CardDescription>
           </CardHeader>
           <CardContent>
-            {stats.topLinks.length === 0 ? (
+            {topLinks.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">No link clicks yet</p>
             ) : (
               <div className="space-y-3">
-                {stats.topLinks.map((link) => (
+                {topLinks.map((link) => (
                   <div key={link.id} className="flex items-center justify-between">
                     <div className="truncate">
                       <div className="font-medium">{link.title}</div>
@@ -121,11 +125,11 @@ function AnalyticsContent() {
           <CardDescription>Latest guest messages</CardDescription>
         </CardHeader>
         <CardContent>
-          {stats.recentActivity.length === 0 ? (
+          {recentActivity.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No recent activity</p>
           ) : (
             <div className="space-y-3">
-              {stats.recentActivity.map((activity, index) => (
+              {recentActivity.map((activity, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <MessageSquare className="h-4 w-4 text-blue-500" />
