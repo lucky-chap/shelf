@@ -7,13 +7,14 @@ export interface AnalyticsStats {
   pendingGuestEntries: number;
   totalPageViews: number;
   uniqueVisitors: number;
+  totalSocialReferrals: number;
   topLinks: Array<{
     id: number;
     title: string;
     clickCount: number;
   }>;
   recentActivity: Array<{
-    type: "guest_entry" | "page_view" | "link_click";
+    type: "guest_entry" | "page_view" | "link_click" | "social_referral";
     description: string;
     timestamp: Date;
   }>;
@@ -24,6 +25,11 @@ export interface AnalyticsStats {
   }>;
   locationStats: Array<{
     country: string;
+    count: number;
+    percentage: number;
+  }>;
+  socialStats: Array<{
+    platform: string;
     count: number;
     percentage: number;
   }>;
@@ -66,6 +72,12 @@ export const getStats = api<void, AnalyticsStats>(
       FROM page_views 
     `;
 
+    // Get social referral stats
+    const socialStats = await analyticsDB.queryRow<{ totalSocialReferrals: string }>`
+      SELECT COALESCE(COUNT(*), 0)::text as "totalSocialReferrals"
+      FROM social_referrals 
+    `;
+
     // Get top links
     const topLinks = await analyticsDB.queryAll<{ id: number; title: string; clickCount: number }>`
       SELECT id, title, click_count as "clickCount"
@@ -82,7 +94,7 @@ export const getStats = api<void, AnalyticsStats>(
         created_at as timestamp
       FROM page_views
       ORDER BY created_at DESC
-      LIMIT 10
+      LIMIT 8
     `;
 
     const recentLinkClicks = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
@@ -92,7 +104,7 @@ export const getStats = api<void, AnalyticsStats>(
       FROM link_clicks lc
       JOIN links l ON lc.link_id = l.id
       ORDER BY lc.created_at DESC
-      LIMIT 10
+      LIMIT 8
     `;
 
     const recentGuestEntries = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
@@ -101,6 +113,15 @@ export const getStats = api<void, AnalyticsStats>(
         created_at as timestamp
       FROM guest_entries
       ORDER BY created_at DESC
+      LIMIT 4
+    `;
+
+    const recentSocialReferrals = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
+      SELECT 
+        CONCAT('Visitor from ', platform) as description,
+        created_at as timestamp
+      FROM social_referrals
+      ORDER BY created_at DESC
       LIMIT 5
     `;
 
@@ -108,7 +129,8 @@ export const getStats = api<void, AnalyticsStats>(
     const allActivities = [
       ...recentPageViews.map(item => ({ ...item, type: "page_view" as const })),
       ...recentLinkClicks.map(item => ({ ...item, type: "link_click" as const })),
-      ...recentGuestEntries.map(item => ({ ...item, type: "guest_entry" as const }))
+      ...recentGuestEntries.map(item => ({ ...item, type: "guest_entry" as const })),
+      ...recentSocialReferrals.map(item => ({ ...item, type: "social_referral" as const }))
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 15);
 
     // Device statistics
@@ -143,6 +165,22 @@ export const getStats = api<void, AnalyticsStats>(
     const locationStatsWithPercentage = locationStats.map(stat => ({
       ...stat,
       percentage: totalLocationViews > 0 ? Math.round((stat.count / totalLocationViews) * 100) : 0
+    }));
+
+    // Social media statistics
+    const socialPlatformStats = await analyticsDB.queryAll<{ platform: string; count: number }>`
+      SELECT 
+        platform,
+        COUNT(*)::integer as count
+      FROM social_referrals
+      GROUP BY platform
+      ORDER BY count DESC
+    `;
+
+    const totalSocialReferrals = socialPlatformStats.reduce((sum, stat) => sum + stat.count, 0);
+    const socialStatsWithPercentage = socialPlatformStats.map(stat => ({
+      ...stat,
+      percentage: totalSocialReferrals > 0 ? Math.round((stat.count / totalSocialReferrals) * 100) : 0
     }));
 
     // Hourly activity (24 hours)
@@ -219,10 +257,12 @@ export const getStats = api<void, AnalyticsStats>(
       pendingGuestEntries: parseInt(guestStats?.pending || "0"),
       totalPageViews: parseInt(pageViewStats?.totalViews || "0"),
       uniqueVisitors: parseInt(pageViewStats?.uniqueVisitors || "0"),
+      totalSocialReferrals: parseInt(socialStats?.totalSocialReferrals || "0"),
       topLinks,
       recentActivity: allActivities,
       deviceStats: deviceStatsWithPercentage,
       locationStats: locationStatsWithPercentage,
+      socialStats: socialStatsWithPercentage,
       hourlyActivity,
       dailyActivity
     };

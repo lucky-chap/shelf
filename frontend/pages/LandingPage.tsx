@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,6 +8,7 @@ import { Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
+import SocialShare from "../components/SocialShare";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
@@ -67,57 +69,113 @@ function LandingPageContent() {
     avatarUrl: null
   };
 
+  const currentUrl = window.location.href;
+  const ogImageUrl = config.avatarUrl || `${window.location.origin}/og-default.png`;
+
   return (
-    <div 
-      className="min-h-screen"
-      style={{ 
-        backgroundColor: config.backgroundColor,
-        color: config.textColor
-      }}
-    >
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {/* Header with Admin Access */}
-          <div className="flex justify-end mb-4">
-            <Link to="/admin">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Admin
-              </Button>
-            </Link>
-          </div>
+    <>
+      <Helmet>
+        {/* Basic meta tags */}
+        <title>{config.title}</title>
+        <meta name="description" content={config.description} />
+        <meta name="theme-color" content={config.themeColor} />
+        
+        {/* Open Graph meta tags for social media */}
+        <meta property="og:title" content={config.title} />
+        <meta property="og:description" content={config.description} />
+        <meta property="og:url" content={currentUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:alt" content={`${config.title} - Landing Page`} />
+        <meta property="og:site_name" content={config.title} />
+        
+        {/* Twitter Card meta tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={config.title} />
+        <meta name="twitter:description" content={config.description} />
+        <meta name="twitter:image" content={ogImageUrl} />
+        <meta name="twitter:image:alt" content={`${config.title} - Landing Page`} />
+        
+        {/* Additional SEO meta tags */}
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={currentUrl} />
+        
+        {/* Structured data for better search results */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": config.title,
+            "description": config.description,
+            "url": currentUrl,
+            "image": ogImageUrl,
+            "author": {
+              "@type": "Person",
+              "name": config.title
+            }
+          })}
+        </script>
+      </Helmet>
 
-          {/* Profile Section */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={config.avatarUrl || undefined} />
-                  <AvatarFallback className="text-lg">
-                    {config.title.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div>
-                  <h1 className="text-2xl font-bold" style={{ color: config.themeColor }}>
-                    {config.title}
-                  </h1>
-                  <p className="text-muted-foreground mt-2">{config.description}</p>
+      <div 
+        className="min-h-screen"
+        style={{ 
+          backgroundColor: config.backgroundColor,
+          color: config.textColor
+        }}
+      >
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <div className="space-y-8">
+            {/* Header with Admin Access */}
+            <div className="flex justify-end mb-4">
+              <Link to="/admin">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
+            </div>
+
+            {/* Profile Section */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={config.avatarUrl || undefined} />
+                    <AvatarFallback className="text-lg">
+                      {config.title.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div>
+                    <h1 className="text-2xl font-bold" style={{ color: config.themeColor }}>
+                      {config.title}
+                    </h1>
+                    <p className="text-muted-foreground mt-2">{config.description}</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <ErrorBoundary>
-            <LinksList />
-          </ErrorBoundary>
-          
-          <ErrorBoundary>
-            <GuestbookSection />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <LinksList />
+            </ErrorBoundary>
+            
+            <ErrorBoundary>
+              <SocialShare 
+                title={config.title}
+                description={config.description}
+                url={currentUrl}
+              />
+            </ErrorBoundary>
+            
+            <ErrorBoundary>
+              <GuestbookSection />
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
