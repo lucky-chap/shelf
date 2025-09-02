@@ -161,17 +161,21 @@ function LandingPageContent() {
               <LinksList />
             </ErrorBoundary>
             
+        
             <ErrorBoundary>
+              <GuestbookSection />
+            </ErrorBoundary>
+
+
+						 <ErrorBoundary>
               <SocialShare 
                 title={config.title}
                 description={config.description}
                 url={currentUrl}
               />
             </ErrorBoundary>
-            
-            <ErrorBoundary>
-              <GuestbookSection />
-            </ErrorBoundary>
+
+						
           </div>
         </div>
       </div>
