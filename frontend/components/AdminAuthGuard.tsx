@@ -27,7 +27,12 @@ function AdminAuthGuardContent({ children }: AdminAuthGuardProps) {
   const setupQuery = useQuery({
     queryKey: ["auth", "setup"],
     queryFn: async () => {
-      return await backend.auth.checkSetup();
+      try {
+        return await backend.auth.checkSetup();
+      } catch (error: any) {
+        console.error("Setup check failed:", error);
+        throw error;
+      }
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -38,9 +43,14 @@ function AdminAuthGuardContent({ children }: AdminAuthGuardProps) {
     queryKey: ["auth", "session", authToken],
     queryFn: async () => {
       if (!authToken) return { valid: false };
-      return await backend.auth.verifySession({
-        authorization: `Bearer ${authToken}`
-      });
+      try {
+        return await backend.auth.verifySession({
+          authorization: `Bearer ${authToken}`
+        });
+      } catch (error: any) {
+        console.error("Session verification failed:", error);
+        return { valid: false };
+      }
     },
     enabled: !!authToken,
     retry: 1,

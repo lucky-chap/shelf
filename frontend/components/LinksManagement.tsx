@@ -67,7 +67,12 @@ function LinksManagementContent() {
   const linksQuery = useQuery({
     queryKey: ["links"],
     queryFn: async () => {
-      return await backend.links.list();
+      try {
+        return await backend.links.list();
+      } catch (error: any) {
+        console.error("Failed to fetch links:", error);
+        throw error;
+      }
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

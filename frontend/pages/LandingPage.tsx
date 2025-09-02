@@ -15,7 +15,12 @@ function LandingPageContent() {
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
-      return await backend.config.get();
+      try {
+        return await backend.config.get();
+      } catch (error: any) {
+        console.error("Failed to fetch config:", error);
+        throw error;
+      }
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

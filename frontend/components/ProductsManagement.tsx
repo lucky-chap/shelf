@@ -44,7 +44,12 @@ function ProductsManagementContent() {
   const productsQuery = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      return await backend.products.list();
+      try {
+        return await backend.products.list();
+      } catch (error: any) {
+        console.error("Failed to fetch products:", error);
+        throw error;
+      }
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

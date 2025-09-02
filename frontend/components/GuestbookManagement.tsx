@@ -18,7 +18,12 @@ function GuestbookManagementContent() {
   const approvedEntriesQuery = useQuery({
     queryKey: ["guestbook", "approved"],
     queryFn: async () => {
-      return await backend.guestbook.list({ approved: true });
+      try {
+        return await backend.guestbook.list({ approved: true });
+      } catch (error: any) {
+        console.error("Failed to fetch approved entries:", error);
+        throw error;
+      }
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -27,7 +32,12 @@ function GuestbookManagementContent() {
   const pendingEntriesQuery = useQuery({
     queryKey: ["guestbook", "pending"],
     queryFn: async () => {
-      return await backend.guestbook.list({ approved: false });
+      try {
+        return await backend.guestbook.list({ approved: false });
+      } catch (error: any) {
+        console.error("Failed to fetch pending entries:", error);
+        throw error;
+      }
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
