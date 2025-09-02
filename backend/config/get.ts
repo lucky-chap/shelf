@@ -8,6 +8,7 @@ export interface SiteConfig {
   backgroundColor: string;
   textColor: string;
   avatarUrl: string | null;
+  customDomain: string | null;
 }
 
 // Retrieves the site configuration.
@@ -21,7 +22,8 @@ export const get = api<void, SiteConfig>(
         theme_color as "themeColor", 
         background_color as "backgroundColor", 
         text_color as "textColor", 
-        owner_avatar_url as "avatarUrl"
+        owner_avatar_url as "avatarUrl",
+        custom_domain as "customDomain"
       FROM site_config 
       WHERE id = 1
     `;
@@ -34,7 +36,8 @@ export const get = api<void, SiteConfig>(
         themeColor: "#3B82F6",
         backgroundColor: "#FFFFFF",
         textColor: "#000000",
-        avatarUrl: null
+        avatarUrl: null,
+        customDomain: null
       };
     }
 

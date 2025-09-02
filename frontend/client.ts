@@ -290,6 +290,7 @@ export namespace auth {
  */
 import { get as api_config_get_get } from "~backend/config/get";
 import { update as api_config_update_update } from "~backend/config/update";
+import { verifyDomain as api_config_verify_domain_verifyDomain } from "~backend/config/verify_domain";
 
 export namespace config {
 
@@ -300,6 +301,7 @@ export namespace config {
             this.baseClient = baseClient
             this.get = this.get.bind(this)
             this.update = this.update.bind(this)
+            this.verifyDomain = this.verifyDomain.bind(this)
         }
 
         /**
@@ -318,6 +320,15 @@ export namespace config {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_update_update>
+        }
+
+        /**
+         * Verifies domain DNS configuration and ownership.
+         */
+        public async verifyDomain(params: RequestType<typeof api_config_verify_domain_verifyDomain>): Promise<ResponseType<typeof api_config_verify_domain_verifyDomain>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/config/verify-domain`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_verify_domain_verifyDomain>
         }
     }
 }

@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings, Save, Globe } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ThemePresetSelector, { ThemePreset } from "./ThemePresetSelector";
+import DomainConfiguration from "./DomainConfiguration";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
@@ -21,7 +23,8 @@ function SiteSettingsContent() {
     themeColor: "#3B82F6",
     backgroundColor: "#FFFFFF",
     textColor: "#000000",
-    avatarUrl: ""
+    avatarUrl: "",
+    customDomain: ""
   });
 
   const { toast } = useToast();
@@ -70,7 +73,8 @@ function SiteSettingsContent() {
         themeColor: configQuery.data.themeColor,
         backgroundColor: configQuery.data.backgroundColor,
         textColor: configQuery.data.textColor,
-        avatarUrl: configQuery.data.avatarUrl || ""
+        avatarUrl: configQuery.data.avatarUrl || "",
+        customDomain: configQuery.data.customDomain || ""
       });
     }
   }, [configQuery.data]);
@@ -109,6 +113,19 @@ function SiteSettingsContent() {
       themeColor: preset.themeColor,
       backgroundColor: preset.backgroundColor,
       textColor: preset.textColor,
+    });
+  };
+
+  const handleDomainChange = (domain: string | null) => {
+    setFormData({
+      ...formData,
+      customDomain: domain || ""
+    });
+    
+    // Auto-save domain changes
+    updateConfigMutation.mutate({
+      ...formData,
+      customDomain: domain || ""
     });
   };
 
@@ -160,193 +177,223 @@ function SiteSettingsContent() {
 
   return (
     <div className="space-y-6">
-      <ThemePresetSelector
-        currentTheme={{
-          themeColor: formData.themeColor,
-          backgroundColor: formData.backgroundColor,
-          textColor: formData.textColor,
-        }}
-        onThemeSelect={handleThemeSelect}
-      />
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="general" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="domain" className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Domain
+          </TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Site Settings
-          </CardTitle>
-          <CardDescription>
-            Configure your landing page appearance and content
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Site Title *</Label>
-              <Input
-                id="title"
-                placeholder="My Landing Page"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
+        <TabsContent value="general" className="space-y-6">
+          <ThemePresetSelector
+            currentTheme={{
+              themeColor: formData.themeColor,
+              backgroundColor: formData.backgroundColor,
+              textColor: formData.textColor,
+            }}
+            onThemeSelect={handleThemeSelect}
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Welcome to my creator landing page"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Site Settings
+              </CardTitle>
+              <CardDescription>
+                Configure your landing page appearance and content
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Site Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="My Landing Page"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                  />
+                </div>
 
-            <div className="space-y-4">
-              <Label>Avatar</Label>
-              <div className="flex items-start gap-6">
-                <div className="flex flex-col items-center gap-3">
-                  <Avatar className="h-24 w-24">
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Welcome to my creator landing page"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Avatar</Label>
+                  <div className="flex items-start gap-6">
+                    <div className="flex flex-col items-center gap-3">
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage src={formData.avatarUrl || undefined} />
+                        <AvatarFallback className="text-lg">
+                          {formData.title.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Current avatar
+                      </p>
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="avatarUrl">Avatar Image URL</Label>
+                      <Input
+                        id="avatarUrl"
+                        placeholder="https://example.com/avatar.jpg"
+                        value={formData.avatarUrl}
+                        onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter a direct URL to your avatar image (JPG, PNG, etc.)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Custom Colors</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="themeColor">Theme Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="themeColor"
+                          type="color"
+                          value={formData.themeColor}
+                          onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
+                          className="w-16 h-10"
+                        />
+                        <Input
+                          value={formData.themeColor}
+                          onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
+                          placeholder="#3B82F6"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="backgroundColor">Background Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="backgroundColor"
+                          type="color"
+                          value={formData.backgroundColor}
+                          onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                          className="w-16 h-10"
+                        />
+                        <Input
+                          value={formData.backgroundColor}
+                          onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+                          placeholder="#FFFFFF"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="textColor">Text Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="textColor"
+                          type="color"
+                          value={formData.textColor}
+                          onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
+                          className="w-16 h-10"
+                        />
+                        <Input
+                          value={formData.textColor}
+                          onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
+                          placeholder="#000000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full flex items-center gap-2"
+                  disabled={updateConfigMutation.isPending}
+                >
+                  {updateConfigMutation.isPending ? (
+                    <LoadingSpinner size="sm" text="Saving..." />
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save Settings
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="domain">
+          <DomainConfiguration 
+            currentDomain={formData.customDomain || null}
+            onDomainChange={handleDomainChange}
+          />
+        </TabsContent>
+
+        <TabsContent value="preview">
+          <Card>
+            <CardHeader>
+              <CardTitle>Preview</CardTitle>
+              <CardDescription>
+                See how your landing page will look with these settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div 
+                className="p-6 rounded-lg border"
+                style={{ 
+                  backgroundColor: formData.backgroundColor,
+                  color: formData.textColor
+                }}
+              >
+                <div className="text-center space-y-4">
+                  <Avatar className="h-16 w-16 mx-auto">
                     <AvatarImage src={formData.avatarUrl || undefined} />
                     <AvatarFallback className="text-lg">
                       {formData.title.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Current avatar
-                  </p>
-                </div>
-                
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="avatarUrl">Avatar Image URL</Label>
-                  <Input
-                    id="avatarUrl"
-                    placeholder="https://example.com/avatar.jpg"
-                    value={formData.avatarUrl}
-                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter a direct URL to your avatar image (JPG, PNG, etc.)
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <Label>Custom Colors</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="themeColor">Theme Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="themeColor"
-                      type="color"
-                      value={formData.themeColor}
-                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.themeColor}
-                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
-                      placeholder="#3B82F6"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backgroundColor">Background Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="backgroundColor"
-                      type="color"
-                      value={formData.backgroundColor}
-                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.backgroundColor}
-                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                      placeholder="#FFFFFF"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="textColor">Text Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="textColor"
-                      type="color"
-                      value={formData.textColor}
-                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.textColor}
-                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                      placeholder="#000000"
-                    />
+                  <div>
+                    <h2 
+                      className="text-xl font-bold"
+                      style={{ color: formData.themeColor }}
+                    >
+                      {formData.title || "Site Title"}
+                    </h2>
+                    <p className="text-sm opacity-75 mt-1">
+                      {formData.description || "Site description"}
+                    </p>
+                    {formData.customDomain && (
+                      <p className="text-xs opacity-60 mt-2">
+                        Available at: {formData.customDomain}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full flex items-center gap-2"
-              disabled={updateConfigMutation.isPending}
-            >
-              {updateConfigMutation.isPending ? (
-                <LoadingSpinner size="sm" text="Saving..." />
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Save Settings
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Preview</CardTitle>
-          <CardDescription>
-            See how your landing page will look with these settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div 
-            className="p-6 rounded-lg border"
-            style={{ 
-              backgroundColor: formData.backgroundColor,
-              color: formData.textColor
-            }}
-          >
-            <div className="text-center space-y-4">
-              <Avatar className="h-16 w-16 mx-auto">
-                <AvatarImage src={formData.avatarUrl || undefined} />
-                <AvatarFallback className="text-lg">
-                  {formData.title.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 
-                  className="text-xl font-bold"
-                  style={{ color: formData.themeColor }}
-                >
-                  {formData.title || "Site Title"}
-                </h2>
-                <p className="text-sm opacity-75 mt-1">
-                  {formData.description || "Site description"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
