@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ShoppingBag, Edit, Trash2, Download, Upload } from "lucide-react";
+import { Plus, ShoppingBag, Edit, Trash2, Download, ExternalLink } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -17,8 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import FileUpload from "./FileUpload";
 import { CardLoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
@@ -33,9 +31,7 @@ function ProductsManagementContent() {
     description: "",
     priceCents: "",
     downloadUrl: "",
-    previewImageUrl: "",
-    fileType: "",
-    fileSizeBytes: ""
+    previewImageUrl: ""
   });
 
   const { toast } = useToast();
@@ -63,8 +59,6 @@ function ProductsManagementContent() {
         priceCents: parseInt(data.priceCents) || 0,
         downloadUrl: data.downloadUrl,
         previewImageUrl: data.previewImageUrl || undefined,
-        fileType: data.fileType || undefined,
-        fileSizeBytes: data.fileSizeBytes ? parseInt(data.fileSizeBytes) : undefined,
       });
     },
     onSuccess: () => {
@@ -95,8 +89,6 @@ function ProductsManagementContent() {
         priceCents: parseInt(data.priceCents) || 0,
         downloadUrl: data.downloadUrl,
         previewImageUrl: data.previewImageUrl || undefined,
-        fileType: data.fileType || undefined,
-        fileSizeBytes: data.fileSizeBytes ? parseInt(data.fileSizeBytes) : undefined,
       });
     },
     onSuccess: () => {
@@ -146,9 +138,7 @@ function ProductsManagementContent() {
       description: "",
       priceCents: "",
       downloadUrl: "",
-      previewImageUrl: "",
-      fileType: "",
-      fileSizeBytes: ""
+      previewImageUrl: ""
     });
   };
 
@@ -159,9 +149,7 @@ function ProductsManagementContent() {
       description: product.description || "",
       priceCents: (product.priceCents / 100).toFixed(2),
       downloadUrl: product.downloadUrl,
-      previewImageUrl: product.previewImageUrl || "",
-      fileType: product.fileType || "",
-      fileSizeBytes: product.fileSizeBytes ? product.fileSizeBytes.toString() : ""
+      previewImageUrl: product.previewImageUrl || ""
     });
     setIsEditDialogOpen(true);
   };
@@ -171,7 +159,7 @@ function ProductsManagementContent() {
     if (!formData.title || !formData.downloadUrl) {
       toast({
         title: "Missing Information",
-        description: "Title and download file are required.",
+        description: "Title and download URL are required.",
         variant: "destructive",
       });
       return;
@@ -187,6 +175,31 @@ function ProductsManagementContent() {
       return;
     }
 
+    // Validate URLs
+    try {
+      new URL(formData.downloadUrl);
+    } catch (error) {
+      toast({
+        title: "Invalid Download URL",
+        description: "Please enter a valid download URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.previewImageUrl) {
+      try {
+        new URL(formData.previewImageUrl);
+      } catch (error) {
+        toast({
+          title: "Invalid Preview URL",
+          description: "Please enter a valid preview image URL.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Convert price to cents
     const formDataWithCents = {
       ...formData,
@@ -200,57 +213,6 @@ function ProductsManagementContent() {
     }
   };
 
-  const handleProductUpload = async (file: File) => {
-    // Make a direct fetch request to the upload endpoint with the file as the body
-    const response = await fetch("/api/uploads/product", {
-      method: "POST",
-      body: file,
-      headers: {
-        "Content-Type": file.type,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || "Upload failed");
-    }
-
-    return await response.json();
-  };
-
-  const handlePreviewUpload = async (file: File) => {
-    const response = await fetch("/api/uploads/preview", {
-      method: "POST",
-      body: file,
-      headers: {
-        "Content-Type": file.type,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || "Upload failed");
-    }
-
-    return await response.json();
-  };
-
-  const handleProductSuccess = (result: { url: string; filename: string; downloadUrl?: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      downloadUrl: result.downloadUrl || result.url,
-      fileSizeBytes: "", // Will be set based on file if available
-      fileType: result.filename.split('.').pop()?.toUpperCase() || ""
-    }));
-  };
-
-  const handlePreviewSuccess = (result: { url: string; filename: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      previewImageUrl: result.url
-    }));
-  };
-
   if (productsQuery.isLoading) {
     return (
       <div className="space-y-6">
@@ -259,7 +221,7 @@ function ProductsManagementContent() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Manage Products</CardTitle>
-                <CardDescription>Add and manage your digital products with file uploads</CardDescription>
+                <CardDescription>Add and manage your digital products with external URLs</CardDescription>
               </div>
               <Button disabled className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -339,100 +301,43 @@ function ProductsManagementContent() {
         </p>
       </div>
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">Upload Files</TabsTrigger>
-          <TabsTrigger value="manual">Manual URLs</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="upload" className="space-y-4">
-          <div className="space-y-2">
-            <Label>Product File *</Label>
-            <FileUpload
-              accept="*/*"
-              maxSize={100}
-              onUpload={handleProductUpload}
-              onSuccess={handleProductSuccess}
-              currentUrl={formData.downloadUrl}
-              variant="product"
-            />
-            {formData.downloadUrl && (
-              <p className="text-xs text-muted-foreground">
-                File uploaded successfully
-              </p>
-            )}
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor={isEdit ? "edit-downloadUrl" : "downloadUrl"}>Download URL *</Label>
+        <Input
+          id={isEdit ? "edit-downloadUrl" : "downloadUrl"}
+          placeholder="https://example.com/file.pdf"
+          value={formData.downloadUrl}
+          onChange={(e) => setFormData({ ...formData, downloadUrl: e.target.value })}
+          required
+        />
+        <p className="text-xs text-muted-foreground">
+          Direct URL where customers will download the product file
+        </p>
+      </div>
 
-          <div className="space-y-2">
-            <Label>Preview Image</Label>
-            <FileUpload
-              accept="image/*"
-              maxSize={10}
-              onUpload={handlePreviewUpload}
-              onSuccess={handlePreviewSuccess}
-              currentUrl={formData.previewImageUrl}
-              variant="preview"
-            />
-            {formData.previewImageUrl && (
-              <div className="mt-2">
-                <img 
-                  src={formData.previewImageUrl} 
-                  alt="Preview" 
-                  className="w-32 h-32 object-cover rounded border"
-                />
-              </div>
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="manual" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor={isEdit ? "edit-downloadUrl" : "downloadUrl"}>Download URL *</Label>
-            <Input
-              id={isEdit ? "edit-downloadUrl" : "downloadUrl"}
-              placeholder="https://example.com/file.pdf"
-              value={formData.downloadUrl}
-              onChange={(e) => setFormData({ ...formData, downloadUrl: e.target.value })}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Direct URL where customers will download the product file
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={isEdit ? "edit-previewImageUrl" : "previewImageUrl"}>Preview Image URL</Label>
-            <Input
-              id={isEdit ? "edit-previewImageUrl" : "previewImageUrl"}
-              placeholder="https://example.com/preview.jpg"
-              value={formData.previewImageUrl}
-              onChange={(e) => setFormData({ ...formData, previewImageUrl: e.target.value })}
+      <div className="space-y-2">
+        <Label htmlFor={isEdit ? "edit-previewImageUrl" : "previewImageUrl"}>Preview Image URL</Label>
+        <Input
+          id={isEdit ? "edit-previewImageUrl" : "previewImageUrl"}
+          placeholder="https://example.com/preview.jpg"
+          value={formData.previewImageUrl}
+          onChange={(e) => setFormData({ ...formData, previewImageUrl: e.target.value })}
+        />
+        <p className="text-xs text-muted-foreground">
+          Optional preview image URL to display on the product card
+        </p>
+        {formData.previewImageUrl && (
+          <div className="mt-2">
+            <img 
+              src={formData.previewImageUrl} 
+              alt="Preview" 
+              className="w-32 h-32 object-cover rounded border"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
           </div>
-        </TabsContent>
-      </Tabs>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor={isEdit ? "edit-fileType" : "fileType"}>File Type</Label>
-          <Input
-            id={isEdit ? "edit-fileType" : "fileType"}
-            placeholder="PDF, ZIP, etc."
-            value={formData.fileType}
-            onChange={(e) => setFormData({ ...formData, fileType: e.target.value })}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor={isEdit ? "edit-fileSizeBytes" : "fileSizeBytes"}>File Size (bytes)</Label>
-          <Input
-            id={isEdit ? "edit-fileSizeBytes" : "fileSizeBytes"}
-            type="number"
-            placeholder="1024000"
-            value={formData.fileSizeBytes}
-            onChange={(e) => setFormData({ ...formData, fileSizeBytes: e.target.value })}
-          />
-        </div>
+        )}
       </div>
 
       <DialogFooter>
@@ -458,7 +363,7 @@ function ProductsManagementContent() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Manage Products</CardTitle>
-              <CardDescription>Add and manage your digital products with file uploads. Support for both free and paid products.</CardDescription>
+              <CardDescription>Add and manage your digital products using external URLs. Support for both free and paid products.</CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -471,7 +376,7 @@ function ProductsManagementContent() {
                 <DialogHeader>
                   <DialogTitle>Add New Product</DialogTitle>
                   <DialogDescription>
-                    Create a new digital product for your store. Upload files directly or provide URLs. Set price to $0 for free products.
+                    Create a new digital product for your store using external URLs. Set price to $0 for free products.
                   </DialogDescription>
                 </DialogHeader>
                 <ProductForm />
@@ -496,6 +401,9 @@ function ProductsManagementContent() {
                         src={product.previewImageUrl}
                         alt={product.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     </div>
                   )}
@@ -519,6 +427,10 @@ function ProductsManagementContent() {
                           <Download className="h-3 w-3" />
                           {product.purchaseCount}
                         </Badge>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <ExternalLink className="h-3 w-3" />
+                        <span className="truncate">{product.downloadUrl}</span>
                       </div>
                       <div className="flex gap-2 pt-2">
                         <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEdit(product)}>
@@ -553,7 +465,7 @@ function ProductsManagementContent() {
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>
-              Update your product details. Upload new files or update URLs. Set price to $0 for free products.
+              Update your product details using external URLs. Set price to $0 for free products.
             </DialogDescription>
           </DialogHeader>
           <ProductForm isEdit={true} />

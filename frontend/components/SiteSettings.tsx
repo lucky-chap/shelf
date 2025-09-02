@@ -6,10 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings, Save, Upload } from "lucide-react";
+import { Settings, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ThemePresetSelector, { ThemePreset } from "./ThemePresetSelector";
-import FileUpload from "./FileUpload";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
@@ -86,6 +85,21 @@ function SiteSettingsContent() {
       });
       return;
     }
+
+    // Validate avatar URL if provided
+    if (formData.avatarUrl) {
+      try {
+        new URL(formData.avatarUrl);
+      } catch (error) {
+        toast({
+          title: "Invalid Avatar URL",
+          description: "Please enter a valid avatar image URL.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     updateConfigMutation.mutate(formData);
   };
 
@@ -96,33 +110,6 @@ function SiteSettingsContent() {
       backgroundColor: preset.backgroundColor,
       textColor: preset.textColor,
     });
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/uploads/avatar", {
-      method: "POST",
-      body: file,
-      headers: {
-        "Content-Type": file.type,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || "Upload failed");
-    }
-
-    return await response.json();
-  };
-
-  const handleAvatarSuccess = (result: { url: string; filename: string }) => {
-    setFormData(prev => ({
-      ...prev,
-      avatarUrl: result.url
-    }));
   };
 
   if (configQuery.isLoading) {
@@ -231,30 +218,18 @@ function SiteSettingsContent() {
                   </p>
                 </div>
                 
-                <div className="flex-1">
-                  <FileUpload
-                    accept="image/*"
-                    maxSize={5}
-                    onUpload={handleAvatarUpload}
-                    onSuccess={handleAvatarSuccess}
-                    currentUrl={formData.avatarUrl}
-                    variant="avatar"
-                    className="h-32"
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="avatarUrl">Avatar Image URL</Label>
+                  <Input
+                    id="avatarUrl"
+                    placeholder="https://example.com/avatar.jpg"
+                    value={formData.avatarUrl}
+                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
                   />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Upload a new avatar image (max 5MB)
+                  <p className="text-xs text-muted-foreground">
+                    Enter a direct URL to your avatar image (JPG, PNG, etc.)
                   </p>
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="avatarUrl">Or enter avatar URL manually</Label>
-                <Input
-                  id="avatarUrl"
-                  placeholder="https://example.com/avatar.jpg"
-                  value={formData.avatarUrl}
-                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                />
               </div>
             </div>
 

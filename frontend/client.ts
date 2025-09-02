@@ -42,7 +42,6 @@ export class Client {
     public readonly products: products.ServiceClient
     public readonly purchases: purchases.ServiceClient
     public readonly site: site.ServiceClient
-    public readonly uploads: uploads.ServiceClient
     public readonly users: users.ServiceClient
     private readonly options: ClientOptions
     private readonly target: string
@@ -67,7 +66,6 @@ export class Client {
         this.products = new products.ServiceClient(base)
         this.purchases = new purchases.ServiceClient(base)
         this.site = new site.ServiceClient(base)
-        this.uploads = new uploads.ServiceClient(base)
         this.users = new users.ServiceClient(base)
     }
 
@@ -525,8 +523,6 @@ export namespace products {
             const body: Record<string, any> = {
                 description:     params.description,
                 downloadUrl:     params.downloadUrl,
-                fileSizeBytes:   params.fileSizeBytes,
-                fileType:        params.fileType,
                 previewImageUrl: params.previewImageUrl,
                 priceCents:      params.priceCents,
                 title:           params.title,
@@ -609,63 +605,6 @@ export namespace site {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/site/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_update_config_updateConfig>
-        }
-    }
-}
-
-/**
- * Import the endpoint handlers to derive the types for the client.
- */
-import { downloadProduct as api_uploads_download_product_downloadProduct } from "~backend/uploads/download_product";
-import { uploadAvatar as api_uploads_upload_avatar_uploadAvatar } from "~backend/uploads/upload_avatar";
-import { uploadPreview as api_uploads_upload_preview_uploadPreview } from "~backend/uploads/upload_preview";
-import { uploadProduct as api_uploads_upload_product_uploadProduct } from "~backend/uploads/upload_product";
-
-export namespace uploads {
-
-    export class ServiceClient {
-        private baseClient: BaseClient
-
-        constructor(baseClient: BaseClient) {
-            this.baseClient = baseClient
-            this.downloadProduct = this.downloadProduct.bind(this)
-            this.uploadAvatar = this.uploadAvatar.bind(this)
-            this.uploadPreview = this.uploadPreview.bind(this)
-            this.uploadProduct = this.uploadProduct.bind(this)
-        }
-
-        /**
-         * Downloads a product file by filename (for internal use).
-         */
-        public async downloadProduct(params: { filename: string }): Promise<void> {
-            await this.baseClient.callTypedAPI(`/uploads/download/${encodeURIComponent(params.filename)}`, {method: "GET", body: undefined})
-        }
-
-        /**
-         * Uploads an avatar image and returns the public URL.
-         */
-        public async uploadAvatar(): Promise<ResponseType<typeof api_uploads_upload_avatar_uploadAvatar>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/uploads/avatar`, {method: "POST", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_uploads_upload_avatar_uploadAvatar>
-        }
-
-        /**
-         * Uploads a product preview image and returns the public URL.
-         */
-        public async uploadPreview(): Promise<ResponseType<typeof api_uploads_upload_preview_uploadPreview>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/uploads/preview`, {method: "POST", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_uploads_upload_preview_uploadPreview>
-        }
-
-        /**
-         * Uploads a digital product file and returns secure download URLs.
-         */
-        public async uploadProduct(): Promise<ResponseType<typeof api_uploads_upload_product_uploadProduct>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/uploads/product`, {method: "POST", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_uploads_upload_product_uploadProduct>
         }
     }
 }
