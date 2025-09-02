@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { generateVisitorId } from "../utils/analytics";
 import backend from "~backend/client";
 
 export default function LinksList() {
@@ -34,6 +36,27 @@ export default function LinksList() {
       });
     },
   });
+
+  const trackClickMutation = useMutation({
+    mutationFn: async (linkId: number) => {
+      const visitorId = generateVisitorId();
+      return await backend.analytics.trackLinkClick({ 
+        linkId, 
+        visitorId 
+      });
+    },
+    onError: (error: any) => {
+      console.error("Failed to track analytics:", error);
+    },
+  });
+
+  const handleLinkClick = async (linkId: number) => {
+    // Track analytics first
+    trackClickMutation.mutate(linkId);
+    
+    // Then track the click and open the link
+    clickMutation.mutate(linkId);
+  };
 
   if (linksQuery.isLoading) {
     return (
@@ -74,7 +97,7 @@ export default function LinksList() {
                 color: link.textColor,
                 borderColor: link.backgroundColor,
               }}
-              onClick={() => clickMutation.mutate(link.id)}
+              onClick={() => handleLinkClick(link.id)}
               disabled={clickMutation.isPending}
             >
               <div className="flex items-center gap-3">

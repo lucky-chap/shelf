@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { trackPageView } from "../utils/analytics";
 import backend from "~backend/client";
 
 function LandingPageContent() {
@@ -24,6 +26,11 @@ function LandingPageContent() {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Track page view when component mounts
+  useEffect(() => {
+    trackPageView('/');
+  }, []);
 
   if (configQuery.isLoading) {
     return (

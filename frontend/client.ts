@@ -94,7 +94,10 @@ export interface ClientOptions {
 /**
  * Import the endpoint handlers to derive the types for the client.
  */
+import { getLinkHeatmap as api_analytics_get_link_heatmap_getLinkHeatmap } from "~backend/analytics/get_link_heatmap";
 import { getStats as api_analytics_get_stats_getStats } from "~backend/analytics/get_stats";
+import { trackLinkClick as api_analytics_track_link_click_trackLinkClick } from "~backend/analytics/track_link_click";
+import { trackPageView as api_analytics_track_page_view_trackPageView } from "~backend/analytics/track_page_view";
 
 export namespace analytics {
 
@@ -103,16 +106,77 @@ export namespace analytics {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.getLinkHeatmap = this.getLinkHeatmap.bind(this)
             this.getStats = this.getStats.bind(this)
+            this.trackLinkClick = this.trackLinkClick.bind(this)
+            this.trackPageView = this.trackPageView.bind(this)
         }
 
         /**
-         * Retrieves analytics statistics (store data excluded).
+         * Retrieves detailed click heatmap data for all links.
+         */
+        public async getLinkHeatmap(params: RequestType<typeof api_analytics_get_link_heatmap_getLinkHeatmap>): Promise<ResponseType<typeof api_analytics_get_link_heatmap_getLinkHeatmap>> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                days: params.days === undefined ? undefined : String(params.days),
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/analytics/link-heatmap`, {query, method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_get_link_heatmap_getLinkHeatmap>
+        }
+
+        /**
+         * Retrieves comprehensive analytics statistics.
          */
         public async getStats(): Promise<ResponseType<typeof api_analytics_get_stats_getStats>> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/analytics`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_get_stats_getStats>
+        }
+
+        /**
+         * Tracks a link click with visitor analytics.
+         */
+        public async trackLinkClick(params: RequestType<typeof api_analytics_track_link_click_trackLinkClick>): Promise<ResponseType<typeof api_analytics_track_link_click_trackLinkClick>> {
+            // Convert our params into the objects we need for the request
+            const headers = makeRecord<string, string>({
+                "cf-ipcountry":    params.country,
+                "user-agent":      params.userAgent,
+                "x-forwarded-for": params.visitorIP,
+            })
+
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                linkId:    params.linkId,
+                visitorId: params.visitorId,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/analytics/link-click`, {headers, method: "POST", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_track_link_click_trackLinkClick>
+        }
+
+        /**
+         * Tracks a page view with visitor analytics.
+         */
+        public async trackPageView(params: RequestType<typeof api_analytics_track_page_view_trackPageView>): Promise<ResponseType<typeof api_analytics_track_page_view_trackPageView>> {
+            // Convert our params into the objects we need for the request
+            const headers = makeRecord<string, string>({
+                "cf-ipcountry":    params.country,
+                "user-agent":      params.userAgent,
+                "x-forwarded-for": params.visitorIP,
+            })
+
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                page:      params.page,
+                visitorId: params.visitorId,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/analytics/page-view`, {headers, method: "POST", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_track_page_view_trackPageView>
         }
     }
 }
