@@ -4,9 +4,6 @@ import { secret } from "encore.dev/config";
 import Stripe from "stripe";
 
 const stripeSecretKey = secret("StripeSecretKey");
-const stripe = new Stripe(stripeSecretKey(), {
-  apiVersion: "2024-12-18.acacia",
-});
 
 export interface CreatePaymentIntentRequest {
   productId: number;
@@ -52,6 +49,11 @@ export const createIntent = api<CreatePaymentIntentRequest, CreatePaymentIntentR
     }
 
     try {
+      // Initialize Stripe client with the secret key
+      const stripe = new Stripe(stripeSecretKey(), {
+        apiVersion: "2024-12-18.acacia",
+      });
+
       // Create Stripe payment intent
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountCents,

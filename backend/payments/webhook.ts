@@ -8,10 +8,6 @@ import crypto from "crypto";
 const stripeSecretKey = secret("StripeSecretKey");
 const stripeWebhookSecret = secret("StripeWebhookSecret");
 
-const stripe = new Stripe(stripeSecretKey(), {
-  apiVersion: "2025-08-27.basil",
-});
-
 export interface WebhookRequest {
   stripeSignature: Header<"Stripe-Signature">;
 }
@@ -32,6 +28,11 @@ export const webhook = api<WebhookRequest, WebhookResponse>(
     let event: Stripe.Event;
 
     try {
+      // Initialize Stripe client with the secret key
+      const stripe = new Stripe(stripeSecretKey(), {
+        apiVersion: "2025-08-27.basil",
+      });
+
       // Verify webhook signature
       event = stripe.webhooks.constructEvent(body, sig, stripeWebhookSecret());
     } catch (error: any) {
