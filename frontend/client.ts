@@ -416,6 +416,7 @@ import { click as api_links_click_click } from "~backend/links/click";
 import { create as api_links_create_create } from "~backend/links/create";
 import { deleteFn as api_links_delete_deleteFn } from "~backend/links/delete";
 import { list as api_links_list_list } from "~backend/links/list";
+import { listAll as api_links_list_all_listAll } from "~backend/links/list_all";
 import { reorder as api_links_reorder_reorder } from "~backend/links/reorder";
 import { update as api_links_update_update } from "~backend/links/update";
 
@@ -430,6 +431,7 @@ export namespace links {
             this.create = this.create.bind(this)
             this.deleteFn = this.deleteFn.bind(this)
             this.list = this.list.bind(this)
+            this.listAll = this.listAll.bind(this)
             this.reorder = this.reorder.bind(this)
             this.update = this.update.bind(this)
         }
@@ -444,7 +446,7 @@ export namespace links {
         }
 
         /**
-         * Creates a new link.
+         * Creates a new link with optional scheduling.
          */
         public async create(params: RequestType<typeof api_links_create_create>): Promise<ResponseType<typeof api_links_create_create>> {
             // Now make the actual call to the API
@@ -460,12 +462,21 @@ export namespace links {
         }
 
         /**
-         * Retrieves all active links, ordered by sort order.
+         * Retrieves all active links within their scheduled timeframe, ordered by sort order.
          */
         public async list(): Promise<ResponseType<typeof api_links_list_list>> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/links`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_links_list_list>
+        }
+
+        /**
+         * Retrieves all links regardless of scheduling (admin only).
+         */
+        public async listAll(): Promise<ResponseType<typeof api_links_list_all_listAll>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/links/admin`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_links_list_all_listAll>
         }
 
         /**
@@ -478,14 +489,16 @@ export namespace links {
         }
 
         /**
-         * Updates an existing link.
+         * Updates an existing link with optional scheduling.
          */
         public async update(params: RequestType<typeof api_links_update_update>): Promise<ResponseType<typeof api_links_update_update>> {
             // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
             const body: Record<string, any> = {
                 backgroundColor: params.backgroundColor,
                 description:     params.description,
+                endDate:         params.endDate,
                 iconUrl:         params.iconUrl,
+                startDate:       params.startDate,
                 textColor:       params.textColor,
                 title:           params.title,
                 url:             params.url,

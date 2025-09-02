@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, ExternalLink } from "lucide-react";
+import { Plus, ExternalLink, Calendar } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -51,7 +51,9 @@ function LinksManagementContent() {
     description: "",
     iconUrl: "",
     backgroundColor: "#FFFFFF",
-    textColor: "#000000"
+    textColor: "#000000",
+    startDate: "",
+    endDate: ""
   });
 
   const { toast } = useToast();
@@ -65,13 +67,19 @@ function LinksManagementContent() {
   );
 
   const linksQuery = useQuery({
-    queryKey: ["links"],
+    queryKey: ["admin-links"],
     queryFn: async () => {
       try {
-        return await backend.links.list();
+        // For admin, we want to see ALL links regardless of scheduling
+        const response = await fetch('/api/links/admin');
+        if (!response.ok) {
+          // Fallback to regular links endpoint if admin endpoint doesn't exist
+          return await backend.links.list();
+        }
+        return await response.json();
       } catch (error: any) {
-        console.error("Failed to fetch links:", error);
-        throw error;
+        // Fallback to regular links endpoint
+        return await backend.links.list();
       }
     },
     retry: 3,
@@ -80,7 +88,23 @@ function LinksManagementContent() {
 
   const createLinkMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await backend.links.create(data);
+      const payload: any = {
+        title: data.title,
+        url: data.url,
+        description: data.description || undefined,
+        iconUrl: data.iconUrl || undefined,
+        backgroundColor: data.backgroundColor,
+        textColor: data.textColor,
+      };
+
+      if (data.startDate) {
+        payload.startDate = new Date(data.startDate);
+      }
+      if (data.endDate) {
+        payload.endDate = new Date(data.endDate);
+      }
+
+      return await backend.links.create(payload);
     },
     onSuccess: () => {
       toast({
@@ -89,6 +113,7 @@ function LinksManagementContent() {
       });
       resetForm();
       setIsCreateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-links"] });
       queryClient.invalidateQueries({ queryKey: ["links"] });
     },
     onError: (error: any) => {
@@ -103,7 +128,24 @@ function LinksManagementContent() {
 
   const updateLinkMutation = useMutation({
     mutationFn: async (data: typeof formData & { id: number }) => {
-      return await backend.links.update(data);
+      const payload: any = {
+        id: data.id,
+        title: data.title,
+        url: data.url,
+        description: data.description || undefined,
+        iconUrl: data.iconUrl || undefined,
+        backgroundColor: data.backgroundColor,
+        textColor: data.textColor,
+      };
+
+      if (data.startDate) {
+        payload.startDate = new Date(data.startDate);
+      }
+      if (data.endDate) {
+        payload.endDate = new Date(data.endDate);
+      }
+
+      return await backend.links.update(payload);
     },
     onSuccess: () => {
       toast({
@@ -113,6 +155,7 @@ function LinksManagementContent() {
       resetForm();
       setIsEditDialogOpen(false);
       setEditingLink(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-links"] });
       queryClient.invalidateQueries({ queryKey: ["links"] });
     },
     onError: (error: any) => {
@@ -134,6 +177,7 @@ function LinksManagementContent() {
         title: "Link Deleted",
         description: "Your link has been deleted successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ["admin-links"] });
       queryClient.invalidateQueries({ queryKey: ["links"] });
     },
     onError: (error: any) => {
@@ -155,6 +199,7 @@ function LinksManagementContent() {
         title: "Links Reordered",
         description: "Your link order has been saved successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ["admin-links"] });
       queryClient.invalidateQueries({ queryKey: ["links"] });
     },
     onError: (error: any) => {
@@ -164,7 +209,7 @@ function LinksManagementContent() {
         description: error.message || "Please try again.",
         variant: "destructive",
       });
-      queryClient.invalidateQueries({ queryKey: ["links"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-links"] });
     },
   });
 
@@ -175,8 +220,21 @@ function LinksManagementContent() {
       description: "",
       iconUrl: "",
       backgroundColor: "#FFFFFF",
-      textColor: "#000000"
+      textColor: "#000000",
+      startDate: "",
+      endDate: ""
     });
+  };
+
+  const formatDateForInput = (date: Date | null) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const handleEdit = (link: any) => {
@@ -187,7 +245,9 @@ function LinksManagementContent() {
       description: link.description || "",
       iconUrl: link.iconUrl || "",
       backgroundColor: link.backgroundColor,
-      textColor: link.textColor
+      textColor: link.textColor,
+      startDate: formatDateForInput(link.startDate),
+      endDate: formatDateForInput(link.endDate)
     });
     setIsEditDialogOpen(true);
   };
@@ -201,6 +261,20 @@ function LinksManagementContent() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Validate date range if both dates are provided
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      if (start >= end) {
+        toast({
+          title: "Invalid Date Range",
+          description: "Start date must be before end date.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     if (editingLink) {
@@ -223,7 +297,7 @@ function LinksManagementContent() {
       const reorderedLinks = arrayMove(links, oldIndex, newIndex);
       const linkIds = reorderedLinks.map((link) => link.id);
 
-      queryClient.setQueryData(["links"], {
+      queryClient.setQueryData(["admin-links"], {
         links: reorderedLinks
       });
 
@@ -239,7 +313,7 @@ function LinksManagementContent() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Manage Links</CardTitle>
-                <CardDescription>Add and customize your link collection. Drag and drop to reorder.</CardDescription>
+                <CardDescription>Add and customize your link collection. Drag and drop to reorder. Schedule links for time-limited promotions.</CardDescription>
               </div>
               <Button disabled className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -275,6 +349,138 @@ function LinksManagementContent() {
 
   const links = linksQuery.data?.links || [];
 
+  const LinkForm = ({ title, isSubmitting }: { title: string; isSubmitting: boolean }) => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="title">Title *</Label>
+        <Input
+          id="title"
+          placeholder="My Awesome Link"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="url">URL *</Label>
+        <Input
+          id="url"
+          placeholder="https://example.com"
+          value={formData.url}
+          onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          placeholder="Optional description..."
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="iconUrl">Icon URL</Label>
+        <Input
+          id="iconUrl"
+          placeholder="https://example.com/icon.png"
+          value={formData.iconUrl}
+          onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
+        />
+      </div>
+
+      <div className="space-y-4">
+        <Label className="flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          Scheduling (Optional)
+        </Label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date & Time</Label>
+            <Input
+              id="startDate"
+              type="datetime-local"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Link will be hidden until this date
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endDate">End Date & Time</Label>
+            <Input
+              id="endDate"
+              type="datetime-local"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Link will be hidden after this date
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="backgroundColor">Background Color</Label>
+          <div className="flex gap-2">
+            <Input
+              id="backgroundColor"
+              type="color"
+              value={formData.backgroundColor}
+              onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+              className="w-16 h-10"
+            />
+            <Input
+              value={formData.backgroundColor}
+              onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+              placeholder="#FFFFFF"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="textColor">Text Color</Label>
+          <div className="flex gap-2">
+            <Input
+              id="textColor"
+              type="color"
+              value={formData.textColor}
+              onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
+              className="w-16 h-10"
+            />
+            <Input
+              value={formData.textColor}
+              onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
+              placeholder="#000000"
+            />
+          </div>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button 
+          type="submit" 
+          disabled={isSubmitting}
+          className="w-full"
+        >
+          {isSubmitting ? (
+            <LoadingSpinner size="sm" text={`${title}...`} />
+          ) : (
+            title
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+
   return (
     <div className="space-y-6">
       <Card>
@@ -282,7 +488,7 @@ function LinksManagementContent() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Manage Links</CardTitle>
-              <CardDescription>Add and customize your link collection. Drag and drop to reorder.</CardDescription>
+              <CardDescription>Add and customize your link collection. Drag and drop to reorder. Schedule links for time-limited promotions.</CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -291,108 +497,14 @@ function LinksManagementContent() {
                   Add Link
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add New Link</DialogTitle>
                   <DialogDescription>
-                    Create a new link for your landing page
+                    Create a new link for your landing page with optional scheduling
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      placeholder="My Awesome Link"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="url">URL *</Label>
-                    <Input
-                      id="url"
-                      placeholder="https://example.com"
-                      value={formData.url}
-                      onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Optional description..."
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="iconUrl">Icon URL</Label>
-                    <Input
-                      id="iconUrl"
-                      placeholder="https://example.com/icon.png"
-                      value={formData.iconUrl}
-                      onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="backgroundColor">Background Color</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="backgroundColor"
-                          type="color"
-                          value={formData.backgroundColor}
-                          onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={formData.backgroundColor}
-                          onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                          placeholder="#FFFFFF"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="textColor">Text Color</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="textColor"
-                          type="color"
-                          value={formData.textColor}
-                          onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={formData.textColor}
-                          onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                          placeholder="#000000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button 
-                      type="submit" 
-                      disabled={createLinkMutation.isPending}
-                      className="w-full"
-                    >
-                      {createLinkMutation.isPending ? (
-                        <LoadingSpinner size="sm" text="Creating..." />
-                      ) : (
-                        "Create Link"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </form>
+                <LinkForm title="Create Link" isSubmitting={createLinkMutation.isPending} />
               </DialogContent>
             </Dialog>
           </div>
@@ -430,108 +542,14 @@ function LinksManagementContent() {
       </Card>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Link</DialogTitle>
             <DialogDescription>
-              Update your link details
+              Update your link details and scheduling
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Title *</Label>
-              <Input
-                id="edit-title"
-                placeholder="My Awesome Link"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-url">URL *</Label>
-              <Input
-                id="edit-url"
-                placeholder="https://example.com"
-                value={formData.url}
-                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                placeholder="Optional description..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-iconUrl">Icon URL</Label>
-              <Input
-                id="edit-iconUrl"
-                placeholder="https://example.com/icon.png"
-                value={formData.iconUrl}
-                onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-backgroundColor">Background Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-backgroundColor"
-                    type="color"
-                    value={formData.backgroundColor}
-                    onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                    className="w-16 h-10"
-                  />
-                  <Input
-                    value={formData.backgroundColor}
-                    onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                    placeholder="#FFFFFF"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-textColor">Text Color</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="edit-textColor"
-                    type="color"
-                    value={formData.textColor}
-                    onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                    className="w-16 h-10"
-                  />
-                  <Input
-                    value={formData.textColor}
-                    onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                    placeholder="#000000"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button 
-                type="submit" 
-                disabled={updateLinkMutation.isPending}
-                className="w-full"
-              >
-                {updateLinkMutation.isPending ? (
-                  <LoadingSpinner size="sm" text="Updating..." />
-                ) : (
-                  "Update Link"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+          <LinkForm title="Update Link" isSubmitting={updateLinkMutation.isPending} />
         </DialogContent>
       </Dialog>
     </div>

@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical, Edit, Trash2, Eye } from "lucide-react";
+import { GripVertical, Edit, Trash2, Eye, Calendar, Clock } from "lucide-react";
 
 interface DraggableLinkProps {
   link: {
@@ -14,6 +14,8 @@ interface DraggableLinkProps {
     backgroundColor: string;
     textColor: string;
     clickCount: number;
+    startDate: Date | null;
+    endDate: Date | null;
   };
   onEdit: (link: any) => void;
   onDelete: (id: number) => void;
@@ -35,6 +37,21 @@ export default function DraggableLink({ link, onEdit, onDelete, isDeleting }: Dr
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const now = new Date();
+  const isScheduled = link.startDate || link.endDate;
+  const isUpcoming = link.startDate && link.startDate > now;
+  const isExpired = link.endDate && link.endDate < now;
+  const isActive = (!link.startDate || link.startDate <= now) && (!link.endDate || link.endDate >= now);
+
+  const getScheduleStatus = () => {
+    if (isUpcoming) return { text: "Upcoming", variant: "secondary" as const };
+    if (isExpired) return { text: "Expired", variant: "destructive" as const };
+    if (isScheduled && isActive) return { text: "Active", variant: "default" as const };
+    return null;
+  };
+
+  const scheduleStatus = getScheduleStatus();
 
   return (
     <div
@@ -63,9 +80,30 @@ export default function DraggableLink({ link, onEdit, onDelete, isDeleting }: Dr
               {link.description}
             </div>
           )}
+          {isScheduled && (
+            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+              {link.startDate && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  Start: {new Date(link.startDate).toLocaleDateString()}
+                </div>
+              )}
+              {link.endDate && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  End: {new Date(link.endDate).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {scheduleStatus && (
+          <Badge variant={scheduleStatus.variant}>
+            {scheduleStatus.text}
+          </Badge>
+        )}
         <Badge variant="secondary" className="flex items-center gap-1">
           <Eye className="h-3 w-3" />
           {link.clickCount}

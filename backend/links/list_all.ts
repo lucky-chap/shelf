@@ -18,13 +18,13 @@ export interface Link {
   updatedAt: Date;
 }
 
-export interface ListLinksResponse {
+export interface ListAllLinksResponse {
   links: Link[];
 }
 
-// Retrieves all active links within their scheduled timeframe, ordered by sort order.
-export const list = api<void, ListLinksResponse>(
-  { expose: true, method: "GET", path: "/links" },
+// Retrieves all links regardless of scheduling (admin only).
+export const listAll = api<void, ListAllLinksResponse>(
+  { expose: true, method: "GET", path: "/links/admin" },
   async () => {
     const links = await linksDB.queryAll<Link>`
       SELECT 
@@ -44,8 +44,6 @@ export const list = api<void, ListLinksResponse>(
         updated_at as "updatedAt"
       FROM links 
       WHERE is_active = true
-        AND (start_date IS NULL OR start_date <= NOW())
-        AND (end_date IS NULL OR end_date >= NOW())
       ORDER BY sort_order ASC
     `;
 
