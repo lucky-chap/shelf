@@ -19,7 +19,7 @@ export interface WebhookResponse {
 // Handles Stripe webhook events for payment processing.
 export const webhook = api<WebhookRequest, WebhookResponse>(
   { expose: true, method: "POST", path: "/payments/webhook" },
-  async (req, { body }) => {
+  async (req, { rawBody }) => {
     const sig = req.stripeSignature;
     if (!sig) {
       throw APIError.invalidArgument("missing stripe signature");
@@ -33,8 +33,8 @@ export const webhook = api<WebhookRequest, WebhookResponse>(
         apiVersion: "2024-12-18.acacia",
       });
 
-      // Verify webhook signature
-      event = stripe.webhooks.constructEvent(body, sig, stripeWebhookSecret());
+      // Verify webhook signature using rawBody
+      event = stripe.webhooks.constructEvent(rawBody, sig, stripeWebhookSecret());
     } catch (error: any) {
       console.error("Webhook signature verification failed:", error.message);
       throw APIError.invalidArgument("invalid signature");
