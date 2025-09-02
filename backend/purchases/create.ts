@@ -9,6 +9,7 @@ export interface CreatePurchaseRequest {
   amountPaidCents: number;
   paymentProvider: string;
   paymentId: string;
+  downloadUrl: string;
 }
 
 export interface Purchase {
@@ -23,6 +24,7 @@ export interface Purchase {
   downloadExpiresAt: Date;
   downloadCount: number;
   maxDownloads: number;
+  downloadUrl: string;
   createdAt: Date;
 }
 
@@ -33,14 +35,14 @@ export const create = api<CreatePurchaseRequest, Purchase>(
     // Generate a secure download token
     const downloadToken = crypto.randomBytes(32).toString('hex');
     
-    // Downloads expire in 7 days
+    // Downloads expire in 30 days
     const downloadExpiresAt = new Date();
-    downloadExpiresAt.setDate(downloadExpiresAt.getDate() + 7);
+    downloadExpiresAt.setDate(downloadExpiresAt.getDate() + 30);
 
     const purchase = await purchasesDB.queryRow<Purchase>`
-      INSERT INTO purchases (product_id, buyer_email, buyer_name, amount_paid_cents, payment_provider, payment_id, download_token, download_expires_at)
-      VALUES (${req.productId}, ${req.buyerEmail}, ${req.buyerName || null}, ${req.amountPaidCents}, ${req.paymentProvider}, ${req.paymentId}, ${downloadToken}, ${downloadExpiresAt})
-      RETURNING id, product_id as "productId", buyer_email as "buyerEmail", buyer_name as "buyerName", amount_paid_cents as "amountPaidCents", payment_provider as "paymentProvider", payment_id as "paymentId", download_token as "downloadToken", download_expires_at as "downloadExpiresAt", download_count as "downloadCount", max_downloads as "maxDownloads", created_at as "createdAt"
+      INSERT INTO purchases (product_id, buyer_email, buyer_name, amount_paid_cents, payment_provider, payment_id, download_token, download_expires_at, download_url)
+      VALUES (${req.productId}, ${req.buyerEmail}, ${req.buyerName || null}, ${req.amountPaidCents}, ${req.paymentProvider}, ${req.paymentId}, ${downloadToken}, ${downloadExpiresAt}, ${req.downloadUrl})
+      RETURNING id, product_id as "productId", buyer_email as "buyerEmail", buyer_name as "buyerName", amount_paid_cents as "amountPaidCents", payment_provider as "paymentProvider", payment_id as "paymentId", download_token as "downloadToken", download_expires_at as "downloadExpiresAt", download_count as "downloadCount", max_downloads as "maxDownloads", download_url as "downloadUrl", created_at as "createdAt"
     `;
 
     if (!purchase) {

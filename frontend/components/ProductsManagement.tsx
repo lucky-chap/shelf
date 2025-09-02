@@ -55,7 +55,7 @@ function ProductsManagementContent() {
       return await backend.products.create({
         title: data.title,
         description: data.description || undefined,
-        priceCents: parseInt(data.priceCents),
+        priceCents: parseInt(data.priceCents) || 0,
         downloadUrl: data.downloadUrl,
         previewImageUrl: data.previewImageUrl || undefined,
         fileType: data.fileType || undefined,
@@ -87,7 +87,7 @@ function ProductsManagementContent() {
         id: editingProduct.id,
         title: data.title,
         description: data.description || undefined,
-        priceCents: parseInt(data.priceCents),
+        priceCents: parseInt(data.priceCents) || 0,
         downloadUrl: data.downloadUrl,
         previewImageUrl: data.previewImageUrl || undefined,
         fileType: data.fileType || undefined,
@@ -163,34 +163,43 @@ function ProductsManagementContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.downloadUrl || !formData.priceCents) {
+    if (!formData.title || !formData.downloadUrl) {
       toast({
         title: "Missing Information",
-        description: "Title, price, and download URL are required.",
+        description: "Title and download file are required.",
         variant: "destructive",
       });
       return;
     }
 
-    const price = parseFloat(formData.priceCents);
-    if (isNaN(price) || price < 0.50) {
+    const price = parseFloat(formData.priceCents) || 0;
+    if (price < 0) {
       toast({
         title: "Invalid Price",
-        description: "Price must be at least $0.50.",
+        description: "Price cannot be negative.",
         variant: "destructive",
       });
       return;
     }
 
+    // Convert price to cents
+    const formDataWithCents = {
+      ...formData,
+      priceCents: (price * 100).toString()
+    };
+
     if (editingProduct) {
-      updateProductMutation.mutate(formData);
+      updateProductMutation.mutate(formDataWithCents);
     } else {
-      createProductMutation.mutate(formData);
+      createProductMutation.mutate(formDataWithCents);
     }
   };
 
   const handleProductUpload = async (file: File) => {
-    const response = await fetch("/api/uploads/product", {
+    const response = await backend.uploads.uploadProduct();
+    
+    // Since uploadProduct expects the file in the request body, we need to call it differently
+    const uploadResponse = await fetch("/api/uploads/product", {
       method: "POST",
       body: file,
       headers: {
@@ -198,12 +207,12 @@ function ProductsManagementContent() {
       },
     });
 
-    if (!response.ok) {
-      const error = await response.text();
+    if (!uploadResponse.ok) {
+      const error = await uploadResponse.text();
       throw new Error(error || "Upload failed");
     }
 
-    return await response.json();
+    return await uploadResponse.json();
   };
 
   const handlePreviewUpload = async (file: File) => {
@@ -227,8 +236,8 @@ function ProductsManagementContent() {
     setFormData(prev => ({
       ...prev,
       downloadUrl: result.downloadUrl || result.url,
-      fileSizeBytes: "", // Will be set based on file
-      fileType: "" // Will be detected from file
+      fileSizeBytes: "", // Will be set based on file if available
+      fileType: result.filename.split('.').pop()?.toUpperCase() || ""
     }));
   };
 
@@ -247,7 +256,7 @@ function ProductsManagementContent() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Manage Products</CardTitle>
-                <CardDescription>Add and manage your digital products</CardDescription>
+                <CardDescription>Add and manage your digital products with file uploads</CardDescription>
               </div>
               <Button disabled className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -308,21 +317,23 @@ function ProductsManagementContent() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={isEdit ? "edit-priceCents" : "priceCents"}>Price (USD) *</Label>
+        <Label htmlFor={isEdit ? "edit-priceCents" : "priceCents"}>Price (USD)</Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
           <Input
             id={isEdit ? "edit-priceCents" : "priceCents"}
             type="number"
             step="0.01"
-            min="0.50"
-            placeholder="9.99"
+            min="0"
+            placeholder="9.99 (or 0 for free)"
             className="pl-8"
             value={formData.priceCents}
             onChange={(e) => setFormData({ ...formData, priceCents: e.target.value })}
-            required
           />
         </div>
+        <p className="text-xs text-muted-foreground">
+          Set to 0 for free products. Paid products must be at least $0.50 due to Stripe requirements.
+        </p>
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
@@ -344,7 +355,7 @@ function ProductsManagementContent() {
             />
             {formData.downloadUrl && (
               <p className="text-xs text-muted-foreground">
-                File uploaded: {formData.downloadUrl}
+                File uploaded successfully
               </p>
             )}
           </div>
@@ -381,6 +392,9 @@ function ProductsManagementContent() {
               onChange={(e) => setFormData({ ...formData, downloadUrl: e.target.value })}
               required
             />
+            <p className="text-xs text-muted-foreground">
+              Direct URL where customers will download the product file
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -394,20 +408,6 @@ function ProductsManagementContent() {
           </div>
         </TabsContent>
       </Tabs>
-
-      <div className="space-y-2">
-        <Label htmlFor={isEdit ? "edit-downloadUrlField" : "downloadUrlField"}>Download URL *</Label>
-        <Input
-          id={isEdit ? "edit-downloadUrlField" : "downloadUrlField"}
-          placeholder="https://example.com/download/file.pdf"
-          value={formData.downloadUrl}
-          onChange={(e) => setFormData({ ...formData, downloadUrl: e.target.value })}
-          required
-        />
-        <p className="text-xs text-muted-foreground">
-          The direct URL where customers will download the product file
-        </p>
-      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -455,7 +455,7 @@ function ProductsManagementContent() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Manage Products</CardTitle>
-              <CardDescription>Add and manage your digital products with file uploads</CardDescription>
+              <CardDescription>Add and manage your digital products with file uploads. Support for both free and paid products.</CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -468,7 +468,7 @@ function ProductsManagementContent() {
                 <DialogHeader>
                   <DialogTitle>Add New Product</DialogTitle>
                   <DialogDescription>
-                    Create a new digital product for your store. Upload files directly or provide URLs.
+                    Create a new digital product for your store. Upload files directly or provide URLs. Set price to $0 for free products.
                   </DialogDescription>
                 </DialogHeader>
                 <ProductForm />
@@ -506,7 +506,11 @@ function ProductsManagementContent() {
                       )}
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-foreground">
-                          ${(product.priceCents / 100).toFixed(2)}
+                          {product.priceCents === 0 ? (
+                            <Badge variant="secondary">Free</Badge>
+                          ) : (
+                            `$${(product.priceCents / 100).toFixed(2)}`
+                          )}
                         </div>
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <Download className="h-3 w-3" />
@@ -546,7 +550,7 @@ function ProductsManagementContent() {
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>
-              Update your product details. Upload new files or update URLs.
+              Update your product details. Upload new files or update URLs. Set price to $0 for free products.
             </DialogDescription>
           </DialogHeader>
           <ProductForm isEdit={true} />

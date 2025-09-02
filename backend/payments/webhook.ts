@@ -30,7 +30,7 @@ export const webhook = api<WebhookRequest, WebhookResponse>(
     try {
       // Initialize Stripe client with the secret key
       const stripe = new Stripe(stripeSecretKey(), {
-        apiVersion: "2025-08-27.basil",
+        apiVersion: "2024-12-18.acacia",
       });
 
       // Verify webhook signature
@@ -61,8 +61,9 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   const productId = parseInt(metadata.productId);
   const buyerEmail = metadata.buyerEmail;
   const buyerName = metadata.buyerName || null;
+  const downloadUrl = metadata.downloadUrl;
 
-  if (!productId || !buyerEmail) {
+  if (!productId || !buyerEmail || !downloadUrl) {
     throw new Error("Missing required metadata in payment intent");
   }
 
@@ -79,9 +80,9 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
   // Generate a secure download token
   const downloadToken = crypto.randomBytes(32).toString('hex');
   
-  // Downloads expire in 7 days
+  // Downloads expire in 30 days for purchased items
   const downloadExpiresAt = new Date();
-  downloadExpiresAt.setDate(downloadExpiresAt.getDate() + 7);
+  downloadExpiresAt.setDate(downloadExpiresAt.getDate() + 30);
 
   // Create purchase record
   const purchase = await paymentsDB.queryRow<{
@@ -96,7 +97,8 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
       payment_provider, 
       payment_id, 
       download_token, 
-      download_expires_at
+      download_expires_at,
+      download_url
     )
     VALUES (
       ${productId}, 
@@ -106,7 +108,8 @@ async function handleSuccessfulPayment(paymentIntent: Stripe.PaymentIntent) {
       'stripe', 
       ${paymentIntent.id}, 
       ${downloadToken}, 
-      ${downloadExpiresAt}
+      ${downloadExpiresAt},
+      ${downloadUrl}
     )
     RETURNING id, product_id as "productId"
   `;

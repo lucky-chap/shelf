@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Download } from "lucide-react";
+import { ShoppingBag, Download, Gift } from "lucide-react";
 import PaymentDialog from "./PaymentDialog";
 import backend from "~backend/client";
 
@@ -74,7 +74,14 @@ export default function ProductsList() {
                     )}
                     <div className="flex items-center justify-between">
                       <div className="text-lg font-bold text-foreground">
-                        ${(product.priceCents / 100).toFixed(2)}
+                        {product.priceCents === 0 ? (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Gift className="h-3 w-3" />
+                            Free
+                          </Badge>
+                        ) : (
+                          `$${(product.priceCents / 100).toFixed(2)}`
+                        )}
                       </div>
                       <Badge variant="secondary" className="flex items-center gap-1">
                         <Download className="h-3 w-3" />
@@ -86,7 +93,7 @@ export default function ProductsList() {
                       size="sm"
                       onClick={() => handlePurchaseClick(product)}
                     >
-                      Purchase
+                      {product.priceCents === 0 ? "Get Free Download" : "Purchase"}
                     </Button>
                   </div>
                 </CardContent>

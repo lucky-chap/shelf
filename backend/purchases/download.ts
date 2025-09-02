@@ -23,7 +23,13 @@ export const download = api<DownloadParams, DownloadResponse>(
       downloadUrl: string;
       title: string;
     }>`
-      SELECT p.id, p.download_count as "downloadCount", p.max_downloads as "maxDownloads", p.download_expires_at as "downloadExpiresAt", pr.download_url as "downloadUrl", pr.title
+      SELECT 
+        p.id, 
+        p.download_count as "downloadCount", 
+        p.max_downloads as "maxDownloads", 
+        p.download_expires_at as "downloadExpiresAt", 
+        p.download_url as "downloadUrl",
+        pr.title
       FROM purchases p
       JOIN products pr ON p.product_id = pr.id
       WHERE p.download_token = ${token}

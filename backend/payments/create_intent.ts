@@ -16,6 +16,7 @@ export interface CreatePaymentIntentResponse {
   paymentIntentId: string;
   amount: number;
   productTitle: string;
+  downloadUrl?: string;
 }
 
 // Creates a Stripe payment intent for a product purchase.
@@ -27,9 +28,10 @@ export const createIntent = api<CreatePaymentIntentRequest, CreatePaymentIntentR
       id: number;
       title: string;
       priceCents: number;
+      downloadUrl: string;
       isActive: boolean;
     }>`
-      SELECT id, title, price_cents as "priceCents", is_active as "isActive"
+      SELECT id, title, price_cents as "priceCents", download_url as "downloadUrl", is_active as "isActive"
       FROM products 
       WHERE id = ${req.productId}
     `;
@@ -43,6 +45,17 @@ export const createIntent = api<CreatePaymentIntentRequest, CreatePaymentIntentR
     }
 
     const amountCents = product.priceCents;
+
+    // Handle free products (0 dollars)
+    if (amountCents === 0) {
+      return {
+        clientSecret: "",
+        paymentIntentId: "",
+        amount: 0,
+        productTitle: product.title,
+        downloadUrl: product.downloadUrl,
+      };
+    }
 
     if (amountCents < 50) { // Stripe minimum is $0.50
       throw APIError.invalidArgument("amount must be at least $0.50");
@@ -63,6 +76,7 @@ export const createIntent = api<CreatePaymentIntentRequest, CreatePaymentIntentR
           productId: req.productId.toString(),
           buyerEmail: req.buyerEmail,
           buyerName: req.buyerName || "",
+          downloadUrl: product.downloadUrl,
         },
         description: `Purchase: ${product.title}`,
       });

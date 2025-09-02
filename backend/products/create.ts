@@ -30,6 +30,10 @@ export interface Product {
 export const create = api<CreateProductRequest, Product>(
   { expose: true, method: "POST", path: "/products" },
   async (req) => {
+    if (!req.downloadUrl) {
+      throw APIError.invalidArgument("download URL is required");
+    }
+
     const product = await productsDB.queryRow<Product>`
       INSERT INTO products (title, description, price_cents, download_url, preview_image_url, file_size_bytes, file_type)
       VALUES (${req.title}, ${req.description || null}, ${req.priceCents}, ${req.downloadUrl}, ${req.previewImageUrl || null}, ${req.fileSizeBytes || null}, ${req.fileType || null})
