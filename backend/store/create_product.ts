@@ -82,9 +82,9 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       throw APIError.invalidArgument("productFile.base64Data is required and must be a string");
     }
     
-    if (!req.productFile.base64Data.trim()) {
-      throw APIError.invalidArgument("productFile.base64Data cannot be empty");
-    }
+    // if (!req.productFile.base64Data.trim()) {
+    //   throw APIError.invalidArgument("productFile.base64Data cannot be empty");
+    // }
     
     if (!req.productFile.contentType || typeof req.productFile.contentType !== 'string') {
       throw APIError.invalidArgument("productFile.contentType is required and must be a string");
