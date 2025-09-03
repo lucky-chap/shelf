@@ -38,6 +38,41 @@ function bytesToBase64(file: File): Promise<{ base64: string; contentType: strin
   });
 }
 
+function isValidBase64(str: string): boolean {
+  if (!str || typeof str !== 'string') {
+    return false;
+  }
+  
+  // Remove whitespace
+  const cleanStr = str.trim();
+  
+  // Check if empty
+  if (cleanStr.length === 0) {
+    return false;
+  }
+  
+  // Basic base64 format check (only valid base64 characters)
+  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+  if (!base64Regex.test(cleanStr)) {
+    return false;
+  }
+  
+  // Check if length is valid (base64 strings should be divisible by 4 when padding is added)
+  const paddedLength = cleanStr.length + (4 - (cleanStr.length % 4)) % 4;
+  if (paddedLength % 4 !== 0) {
+    return false;
+  }
+  
+  // Try to decode using browser's atob function
+  try {
+    const decoded = atob(cleanStr);
+    // Check if we got actual data
+    return decoded.length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
 function StoreManagementContent() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -91,18 +126,8 @@ function StoreManagementContent() {
         const fileB64 = await bytesToBase64(file);
         
         // Validate that we got valid base64 data
-        if (!fileB64.base64 || fileB64.base64.trim().length === 0) {
-          throw new Error("Failed to convert file to base64");
-        }
-
-        // Test if base64 is valid
-        try {
-          const testBuffer = Buffer.from(fileB64.base64, 'base64');
-          if (testBuffer.length === 0) {
-            throw new Error("Invalid base64 data generated");
-          }
-        } catch (error) {
-          throw new Error("Generated base64 data is invalid");
+        if (!fileB64.base64 || !isValidBase64(fileB64.base64)) {
+          throw new Error("Failed to convert file to valid base64 format");
         }
 
         // Prepare cover image if provided
@@ -112,20 +137,14 @@ function StoreManagementContent() {
             const coverB64 = await bytesToBase64(cover);
             
             // Only include cover if we got valid base64 data
-            if (coverB64.base64 && coverB64.base64.trim().length > 0) {
-              // Test if cover base64 is valid
-              try {
-                const testBuffer = Buffer.from(coverB64.base64, 'base64');
-                if (testBuffer.length > 0) {
-                  coverPayload = {
-                    fileName: cover.name.trim(),
-                    contentType: coverB64.contentType || "image/jpeg",
-                    base64Data: coverB64.base64,
-                  };
-                }
-              } catch (error) {
-                console.warn("Invalid cover base64 data, skipping cover image");
-              }
+            if (coverB64.base64 && isValidBase64(coverB64.base64)) {
+              coverPayload = {
+                fileName: cover.name.trim(),
+                contentType: coverB64.contentType || "image/jpeg",
+                base64Data: coverB64.base64,
+              };
+            } else {
+              console.warn("Invalid cover base64 data, skipping cover image");
             }
           } catch (coverError) {
             console.warn("Failed to process cover image, proceeding without it:", coverError);
