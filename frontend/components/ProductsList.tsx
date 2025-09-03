@@ -29,47 +29,59 @@ export default function ProductsList() {
   const productsQuery = useQuery({
     queryKey: ["store", "products"],
     queryFn: async () => {
-      return await backend.store.listProducts();
+      try {
+        return await backend.store.listProducts();
+      } catch (error: any) {
+        console.error("Failed to fetch products:", error);
+        throw error;
+      }
     }
   });
 
   const checkoutMutation = useMutation({
     mutationFn: async (product: Product) => {
-      const successUrl = `${window.location.origin}/checkout/success`;
-      const cancelUrl = window.location.href;
-      return await backend.store.createCheckoutSession({
-        productId: product.id,
-        successUrl: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl
-      });
+      try {
+        const successUrl = `${window.location.origin}/checkout/success`;
+        const cancelUrl = window.location.href;
+        
+        return await backend.store.createCheckoutSession({
+          productId: product.id,
+          successUrl: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl
+        });
+      } catch (error: any) {
+        console.error("Checkout session creation failed:", error);
+        throw error;
+      }
     },
     onSuccess: async (resp, variables) => {
-      if (resp.downloadUrl) {
-        setSelectedProduct(variables);
-        setDownloadUrl(resp.downloadUrl);
-        setShowDialog(true);
-        return;
-      }
-
-      const sessionId = resp.sessionId;
-      const sessionUrl = resp.sessionUrl;
-
-      if (!sessionId) {
-        if (sessionUrl) {
-          // Fallback: redirect to Stripe-hosted Checkout URL
-          window.location.assign(sessionUrl);
+      try {
+        if (resp.downloadUrl) {
+          // Free product - show download dialog
+          setSelectedProduct(variables);
+          setDownloadUrl(resp.downloadUrl);
+          setShowDialog(true);
           return;
         }
-        toast({
-          title: "Checkout Error",
-          description: "Unable to initiate Stripe Checkout session.",
-          variant: "destructive",
-        });
-        return;
-      }
 
-      // Redirect using Stripe.js with publishable key
-      try {
+        const sessionId = resp.sessionId;
+        const sessionUrl = resp.sessionUrl;
+
+        if (!sessionId) {
+          if (sessionUrl) {
+            // Fallback: redirect to Stripe-hosted Checkout URL
+            window.location.assign(sessionUrl);
+            return;
+          }
+          toast({
+            title: "Checkout Error",
+            description: "Unable to initiate Stripe Checkout session.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Redirect using Stripe.js with publishable key
         if (!isStripeConfigured()) {
           if (sessionUrl) {
             window.location.assign(sessionUrl);
@@ -77,10 +89,12 @@ export default function ProductsList() {
           }
           throw new Error("Stripe publishable key is missing or invalid. Set it in frontend/config.ts as a 'pk_' key.");
         }
+        
         const stripe = await getStripe();
         if (!stripe) {
           throw new Error("Failed to initialize Stripe.js");
         }
+        
         const res = await stripe.redirectToCheckout({ sessionId });
         if (res.error) {
           throw res.error;
@@ -96,9 +110,24 @@ export default function ProductsList() {
     },
     onError: (error: any) => {
       console.error("Checkout error:", error);
+      
+      let errorMessage = "Failed to start checkout";
+      
+      if (error?.message) {
+        if (error.message.includes("product not found")) {
+          errorMessage = "This product is no longer available";
+        } else if (error.message.includes("Stripe secret key not configured")) {
+          errorMessage = "Payment system not configured. Please contact the site owner.";
+        } else if (error.message.includes("Invalid Stripe secret key")) {
+          errorMessage = "Payment system misconfigured. Please contact the site owner.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Checkout Error",
-        description: error?.message || "Failed to start checkout",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -116,6 +145,33 @@ export default function ProductsList() {
         </CardHeader>
         <CardContent>
           <LoadingSpinner text="Loading products..." />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (productsQuery.isError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Store</CardTitle>
+          <CardDescription>Explore digital products</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-2">Failed to load products</p>
+            <p className="text-sm text-destructive">
+              {productsQuery.error instanceof Error ? productsQuery.error.message : "An unexpected error occurred"}
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => productsQuery.refetch()}
+              className="mt-4"
+            >
+              Try Again
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -170,8 +226,14 @@ export default function ProductsList() {
                       disabled={checkoutMutation.isPending}
                       className="flex items-center gap-2"
                     >
-                      {p.priceCents === 0 ? <Download className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
-                      {p.priceCents === 0 ? "Download" : "Buy"}
+                      {checkoutMutation.isPending ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <>
+                          {p.priceCents === 0 ? <Download className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+                          {p.priceCents === 0 ? "Download" : "Buy"}
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
