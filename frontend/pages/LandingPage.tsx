@@ -9,7 +9,6 @@ import { Link } from "react-router-dom";
 import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
 import SocialShare from "../components/SocialShare";
-import ProductsList from "../components/ProductsList";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
@@ -230,12 +229,6 @@ function LandingPageContent() {
                 </div>
               </CardContent>
             </Card>
-
-            <ErrorBoundary>
-              <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>
-                <ProductsList />
-              </div>
-            </ErrorBoundary>
 
             <ErrorBoundary>
               <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>

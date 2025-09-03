@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LandingPage from "./pages/LandingPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import CheckoutResult from "./pages/CheckoutResult";
 import ConfigGuard from "./components/ConfigGuard";
 
 const queryClient = new QueryClient({
@@ -33,9 +32,10 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/checkout/success" element={<CheckoutResult />} />
-                  {/* Redirect legacy store URLs no longer needed */}
+                  {/* Redirect legacy URLs no longer needed */}
                   <Route path="/product/*" element={<Navigate to="/" replace />} />
+                  <Route path="/store/*" element={<Navigate to="/" replace />} />
+                  <Route path="/checkout/*" element={<Navigate to="/" replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </ConfigGuard>
