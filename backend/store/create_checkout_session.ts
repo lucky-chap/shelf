@@ -1,6 +1,5 @@
 import { api, APIError } from "encore.dev/api";
 import { storeDB } from "./db";
-import { productFiles } from "./buckets";
 import { secret } from "encore.dev/config";
 import Stripe from "stripe";
 
@@ -49,6 +48,7 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
       // Free product: return a fresh signed download URL right away
       if (product.priceCents === 0) {
         try {
+          const { productFiles } = await import("./buckets");
           const { url } = await productFiles.signedDownloadUrl(product.fileKey, { ttl: 2 * 3600 });
           return { downloadUrl: url };
         } catch (error: any) {
@@ -68,16 +68,6 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
 
       const stripe = new Stripe(sk, { apiVersion: "2024-06-20" });
 
-      // Generate a short-lived URL to include in metadata
-      let tempDownloadUrl = "";
-      try {
-        const tempDownload = await productFiles.signedDownloadUrl(product.fileKey, { ttl: 2 * 3600 });
-        tempDownloadUrl = tempDownload.url;
-      } catch (error: any) {
-        console.error("Failed to generate temp download URL:", error);
-        throw APIError.internal("Failed to generate download URL");
-      }
-
       try {
         const session = await stripe.checkout.sessions.create({
           mode: "payment",
@@ -87,7 +77,6 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
           cancel_url: cancelUrl,
           metadata: {
             product_id: String(product.id),
-            download_url: tempDownloadUrl,
             file_key: product.fileKey,
           },
           line_items: [

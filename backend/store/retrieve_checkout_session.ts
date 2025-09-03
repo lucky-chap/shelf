@@ -45,24 +45,19 @@ export const retrieveCheckoutSession = api<RetrieveCheckoutSessionRequest, Retri
         return { paid: false };
       }
 
-      // Prefer regenerating a fresh signed URL using file_key if present
+      // Generate a fresh signed URL using the file_key from metadata
       const fileKey = session.metadata?.file_key;
-      if (fileKey) {
-        try {
-          const fresh = await productFiles.signedDownloadUrl(fileKey, { ttl: 2 * 3600 });
-          return { paid: true, downloadUrl: fresh.url };
-        } catch (error: any) {
-          console.error("Failed to generate fresh download URL:", error);
-          // Fall back to stored URL if regeneration fails
-        }
+      if (!fileKey) {
+        throw APIError.internal("file key not present in session metadata");
       }
 
-      const dl = session.metadata?.download_url;
-      if (!dl) {
-        throw APIError.internal("download URL not present in session metadata");
+      try {
+        const { url } = await productFiles.signedDownloadUrl(fileKey, { ttl: 2 * 3600 });
+        return { paid: true, downloadUrl: url };
+      } catch (error: any) {
+        console.error("Failed to generate download URL:", error);
+        throw APIError.internal("Failed to generate download URL");
       }
-      
-      return { paid: true, downloadUrl: dl };
     } catch (error: any) {
       console.error("Retrieve checkout session error:", error);
       
