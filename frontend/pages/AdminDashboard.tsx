@@ -2,13 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BarChart3, Link, MessageSquare, Settings, LogOut } from "lucide-react";
+import { ArrowLeft, BarChart3, Link, MessageSquare, Settings, LogOut, ShoppingCart } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import AdminAuthGuard from "../components/AdminAuthGuard";
 import AnalyticsOverview from "../components/AnalyticsOverview";
 import LinksManagement from "../components/LinksManagement";
 import GuestbookManagement from "../components/GuestbookManagement";
 import SiteSettings from "../components/SiteSettings";
+import StoreAdmin from "../components/StoreAdmin";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 
@@ -79,7 +80,7 @@ function AdminDashboardContent() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
@@ -95,6 +96,10 @@ function AdminDashboardContent() {
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Settings
+            </TabsTrigger>
+            <TabsTrigger value="store" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Store
             </TabsTrigger>
           </TabsList>
 
@@ -112,6 +117,10 @@ function AdminDashboardContent() {
 
           <TabsContent value="settings">
             <SiteSettings />
+          </TabsContent>
+
+          <TabsContent value="store">
+            <StoreAdmin />
           </TabsContent>
         </Tabs>
       </div>

@@ -39,6 +39,7 @@ export class Client {
     public readonly guestbook: guestbook.ServiceClient
     public readonly links: links.ServiceClient
     public readonly site: site.ServiceClient
+    public readonly store: store.ServiceClient
     public readonly users: users.ServiceClient
     private readonly options: ClientOptions
     private readonly target: string
@@ -60,6 +61,7 @@ export class Client {
         this.guestbook = new guestbook.ServiceClient(base)
         this.links = new links.ServiceClient(base)
         this.site = new site.ServiceClient(base)
+        this.store = new store.ServiceClient(base)
         this.users = new users.ServiceClient(base)
     }
 
@@ -572,6 +574,133 @@ export namespace site {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/site/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_update_config_updateConfig>
+        }
+    }
+}
+
+/**
+ * Import the endpoint handlers to derive the types for the client.
+ */
+import { createCheckoutSession as api_store_create_checkout_session_createCheckoutSession } from "~backend/store/create_checkout_session";
+import { createProduct as api_store_create_product_createProduct } from "~backend/store/create_product";
+import { downloadFromSession as api_store_download_from_session_downloadFromSession } from "~backend/store/download_from_session";
+import { freeDownload as api_store_free_download_freeDownload } from "~backend/store/free_download";
+import { getCheckoutSession as api_store_get_checkout_session_getCheckoutSession } from "~backend/store/get_checkout_session";
+import { getUploadUrls as api_store_get_upload_urls_getUploadUrls } from "~backend/store/get_upload_urls";
+import { listProducts as api_store_list_products_listProducts } from "~backend/store/list_products";
+import { listProductsAdmin as api_store_list_products_admin_listProductsAdmin } from "~backend/store/list_products_admin";
+import { stripeWebhook as api_store_webhook_stripeWebhook } from "~backend/store/webhook";
+
+export namespace store {
+
+    export class ServiceClient {
+        private baseClient: BaseClient
+
+        constructor(baseClient: BaseClient) {
+            this.baseClient = baseClient
+            this.createCheckoutSession = this.createCheckoutSession.bind(this)
+            this.createProduct = this.createProduct.bind(this)
+            this.downloadFromSession = this.downloadFromSession.bind(this)
+            this.freeDownload = this.freeDownload.bind(this)
+            this.getCheckoutSession = this.getCheckoutSession.bind(this)
+            this.getUploadUrls = this.getUploadUrls.bind(this)
+            this.listProducts = this.listProducts.bind(this)
+            this.listProductsAdmin = this.listProductsAdmin.bind(this)
+            this.stripeWebhook = this.stripeWebhook.bind(this)
+        }
+
+        /**
+         * Creates a Stripe Checkout Session for paid products,
+         * or returns a direct signed download URL for free products.
+         */
+        public async createCheckoutSession(params: RequestType<typeof api_store_create_checkout_session_createCheckoutSession>): Promise<ResponseType<typeof api_store_create_checkout_session_createCheckoutSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/checkout/session`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_create_checkout_session_createCheckoutSession>
+        }
+
+        /**
+         * Creates a new digital product with secure file references.
+         */
+        public async createProduct(params: RequestType<typeof api_store_create_product_createProduct>): Promise<ResponseType<typeof api_store_create_product_createProduct>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/products`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_create_product_createProduct>
+        }
+
+        /**
+         * Generates a secure download URL for a purchased product using the Stripe session.
+         */
+        public async downloadFromSession(params: RequestType<typeof api_store_download_from_session_downloadFromSession>): Promise<ResponseType<typeof api_store_download_from_session_downloadFromSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/download`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_download_from_session_downloadFromSession>
+        }
+
+        /**
+         * Generates a secure download URL for a free product.
+         */
+        public async freeDownload(params: RequestType<typeof api_store_free_download_freeDownload>): Promise<ResponseType<typeof api_store_free_download_freeDownload>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/free-download`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_free_download_freeDownload>
+        }
+
+        /**
+         * Retrieves a Checkout Session from Stripe and returns metadata needed to download.
+         */
+        public async getCheckoutSession(params: { sessionId: string }): Promise<ResponseType<typeof api_store_get_checkout_session_getCheckoutSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/checkout/session/${encodeURIComponent(params.sessionId)}`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_get_checkout_session_getCheckoutSession>
+        }
+
+        /**
+         * Generates signed upload URLs for product file and optional cover image.
+         */
+        public async getUploadUrls(params: RequestType<typeof api_store_get_upload_urls_getUploadUrls>): Promise<ResponseType<typeof api_store_get_upload_urls_getUploadUrls>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/upload-urls`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_get_upload_urls_getUploadUrls>
+        }
+
+        /**
+         * Lists public products (without exposing file object names).
+         */
+        public async listProducts(): Promise<ResponseType<typeof api_store_list_products_listProducts>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/products`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_list_products_listProducts>
+        }
+
+        /**
+         * Lists all products for admin (no auth enforced here).
+         */
+        public async listProductsAdmin(): Promise<ResponseType<typeof api_store_list_products_admin_listProductsAdmin>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/admin/products`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_list_products_admin_listProductsAdmin>
+        }
+
+        /**
+         * Handles Stripe webhooks for checkout.session.completed.
+         */
+        public async stripeWebhook(params: RequestType<typeof api_store_webhook_stripeWebhook>): Promise<void> {
+            // Convert our params into the objects we need for the request
+            const headers = makeRecord<string, string>({
+                "stripe-signature": params.stripeSignature,
+            })
+
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                data:     params.data,
+                id:       params.id,
+                livemode: params.livemode,
+                request:  params.request,
+                type:     params.type,
+            }
+
+            await this.baseClient.callTypedAPI(`/store/stripe/webhook`, {headers, method: "POST", body: JSON.stringify(body)})
         }
     }
 }
