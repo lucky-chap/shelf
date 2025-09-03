@@ -6,7 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import LandingPage from "./pages/LandingPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CheckoutResult from "./pages/CheckoutResult";
-import { isStripeConfigured, isUnsplashConfigured } from "./config";
+import ConfigGuard from "./components/ConfigGuard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,19 +22,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Log configuration status
-if (isStripeConfigured()) {
-  console.log("Stripe integration enabled");
-} else {
-  console.log("Stripe integration disabled - set VITE_STRIPE_PUBLISHABLE_KEY to enable store functionality");
-}
-
-if (isUnsplashConfigured()) {
-  console.log("Unsplash integration enabled");
-} else {
-  console.log("Unsplash integration disabled - set VITE_UNSPLASH_ACCESS_KEY to enable background images");
-}
-
 export default function App() {
   return (
     <ErrorBoundary>
@@ -42,15 +29,16 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <Router>
             <div className="min-h-screen bg-background">
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/checkout/success" element={<CheckoutResult />} />
-                {/* Redirect legacy store URLs no longer needed */}
-                <Route path="/product/*" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              
+              <ConfigGuard>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/checkout/success" element={<CheckoutResult />} />
+                  {/* Redirect legacy store URLs no longer needed */}
+                  <Route path="/product/*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </ConfigGuard>
               <Toaster />
             </div>
           </Router>

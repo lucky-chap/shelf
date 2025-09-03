@@ -8,7 +8,6 @@ import { Search, Check, Image, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
-import { isUnsplashConfigured } from "../config";
 import backend from "~backend/client";
 
 interface UnsplashImage {
@@ -71,27 +70,6 @@ function UnsplashImageSearchContent({ selectedImageUrl, onImageSelect }: Unsplas
     });
   };
 
-  if (!isUnsplashConfigured()) {
-    return (
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            Unsplash Not Configured
-          </CardTitle>
-          <CardDescription>
-            Unsplash integration is not available because the access key is not configured.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            To enable Unsplash background images, please configure the VITE_UNSPLASH_ACCESS_KEY environment variable.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -152,7 +130,7 @@ function UnsplashImageSearchContent({ selectedImageUrl, onImageSelect }: Unsplas
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {searchResults.data.results.map((image) => (
+              {searchResults.data.results.map((image: UnsplashImage) => (
                 <div
                   key={image.id}
                   className="relative group cursor-pointer"
