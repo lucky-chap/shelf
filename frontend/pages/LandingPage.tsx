@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import LinksList from "../components/LinksList";
-import ProductsSection from "../components/ProductsSection";
 import GuestbookSection from "../components/GuestbookSection";
 import SocialShare from "../components/SocialShare";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -237,10 +236,6 @@ function LandingPageContent() {
               </div>
             </ErrorBoundary>
 
-            <ErrorBoundary>
-              <ProductsSection />
-            </ErrorBoundary>
-            
             <ErrorBoundary>
               <GuestbookSection />
             </ErrorBoundary>

@@ -3,12 +3,12 @@
 
 -- Drop foreign key constraints first
 ALTER TABLE links DROP CONSTRAINT IF EXISTS links_user_id_fkey;
-ALTER TABLE products DROP CONSTRAINT IF EXISTS products_user_id_fkey;
+ALTER TABLE IF EXISTS products DROP CONSTRAINT IF EXISTS products_user_id_fkey;
 ALTER TABLE guest_entries DROP CONSTRAINT IF EXISTS guest_entries_user_id_fkey;
 
 -- Drop user_id columns
 ALTER TABLE links DROP COLUMN IF EXISTS user_id;
-ALTER TABLE products DROP COLUMN IF EXISTS user_id;
+ALTER TABLE IF EXISTS products DROP COLUMN IF EXISTS user_id;
 ALTER TABLE guest_entries DROP COLUMN IF EXISTS user_id;
 
 -- Update site_config table structure

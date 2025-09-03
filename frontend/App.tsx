@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LandingPage from "./pages/LandingPage";
 import AdminDashboard from "./pages/AdminDashboard";
-import ConfigGuard from "./components/ConfigGuard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,17 +27,15 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
           <Router>
             <div className="min-h-screen bg-background">
-              <ConfigGuard>
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  {/* Redirect legacy URLs from removed features */}
-                  <Route path="/product/*" element={<Navigate to="/" replace />} />
-                  <Route path="/store/*" element={<Navigate to="/" replace />} />
-                  <Route path="/checkout/*" element={<Navigate to="/" replace />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </ConfigGuard>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                {/* Redirect legacy URLs from removed features */}
+                <Route path="/product/*" element={<Navigate to="/" replace />} />
+                <Route path="/store/*" element={<Navigate to="/" replace />} />
+                <Route path="/checkout/*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
               <Toaster />
             </div>
           </Router>
