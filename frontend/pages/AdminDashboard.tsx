@@ -2,13 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BarChart3, Link, MessageSquare, Settings, LogOut } from "lucide-react";
+import { ArrowLeft, BarChart3, Link as LinkIcon, MessageSquare, Settings, LogOut, ShoppingCart } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import AdminAuthGuard from "../components/AdminAuthGuard";
 import AnalyticsOverview from "../components/AnalyticsOverview";
 import LinksManagement from "../components/LinksManagement";
 import GuestbookManagement from "../components/GuestbookManagement";
 import SiteSettings from "../components/SiteSettings";
+import StoreManagement from "../components/StoreManagement";
 import { useToast } from "@/components/ui/use-toast";
 import backend from "~backend/client";
 
@@ -20,6 +21,12 @@ function AdminDashboardContent() {
     queryFn: async () => {
       return await backend.config.get();
     },
+  });
+
+  const storeConfigQuery = useQuery({
+    queryKey: ["store", "config"],
+    queryFn: async () => await backend.store.isConfigured(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const handleLogout = async () => {
@@ -50,6 +57,8 @@ function AdminDashboardContent() {
     avatarUrl: null
   };
 
+  const storeEnabled = !!storeConfigQuery.data?.enabled;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card">
@@ -79,13 +88,13 @@ function AdminDashboardContent() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${storeEnabled ? "grid-cols-5" : "grid-cols-4"}`}>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
             </TabsTrigger>
             <TabsTrigger value="links" className="flex items-center gap-2">
-              <Link className="h-4 w-4" />
+              <LinkIcon className="h-4 w-4" />
               Links
             </TabsTrigger>
             <TabsTrigger value="guestbook" className="flex items-center gap-2">
@@ -96,9 +105,15 @@ function AdminDashboardContent() {
               <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
+            {storeEnabled && (
+              <TabsTrigger value="store" className="flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Store
+              </TabsTrigger>
+            )}
           </TabsList>
 
-        <TabsContent value="analytics">
+          <TabsContent value="analytics">
             <AnalyticsOverview />
           </TabsContent>
 
@@ -113,6 +128,12 @@ function AdminDashboardContent() {
           <TabsContent value="settings">
             <SiteSettings />
           </TabsContent>
+
+          {storeEnabled && (
+            <TabsContent value="store">
+              <StoreManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
