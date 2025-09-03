@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
 import SocialShare from "../components/SocialShare";
+import ProductsList from "../components/ProductsList";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
@@ -158,26 +159,24 @@ function LandingPageContent() {
             </Card>
 
             <ErrorBoundary>
+              <ProductsList />
+            </ErrorBoundary>
+
+            <ErrorBoundary>
               <LinksList />
             </ErrorBoundary>
             
-        
             <ErrorBoundary>
               <GuestbookSection />
             </ErrorBoundary>
 
-
-						 <ErrorBoundary>
+            <ErrorBoundary>
               <SocialShare 
                 title={config.title}
                 description={config.description}
                 url={currentUrl}
               />
             </ErrorBoundary>
-
-
-						
-						
           </div>
         </div>
       </div>

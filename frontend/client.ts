@@ -39,6 +39,7 @@ export class Client {
     public readonly guestbook: guestbook.ServiceClient
     public readonly links: links.ServiceClient
     public readonly site: site.ServiceClient
+    public readonly store: store.ServiceClient
     public readonly users: users.ServiceClient
     private readonly options: ClientOptions
     private readonly target: string
@@ -60,6 +61,7 @@ export class Client {
         this.guestbook = new guestbook.ServiceClient(base)
         this.links = new links.ServiceClient(base)
         this.site = new site.ServiceClient(base)
+        this.store = new store.ServiceClient(base)
         this.users = new users.ServiceClient(base)
     }
 
@@ -555,6 +557,106 @@ export namespace site {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/site/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_update_config_updateConfig>
+        }
+    }
+}
+
+/**
+ * Import the endpoint handlers to derive the types for the client.
+ */
+import { createCheckoutSession as api_store_create_checkout_session_createCheckoutSession } from "~backend/store/create_checkout_session";
+import { createProduct as api_store_create_product_createProduct } from "~backend/store/create_product";
+import { deleteProduct as api_store_delete_product_deleteProduct } from "~backend/store/delete_product";
+import { generateUploadUrl as api_store_generate_upload_url_generateUploadUrl } from "~backend/store/generate_upload_url";
+import { listProducts as api_store_list_products_listProducts } from "~backend/store/list_products";
+import { retrieveCheckoutSession as api_store_retrieve_checkout_session_retrieveCheckoutSession } from "~backend/store/retrieve_checkout_session";
+import { updateProduct as api_store_update_product_updateProduct } from "~backend/store/update_product";
+
+export namespace store {
+
+    export class ServiceClient {
+        private baseClient: BaseClient
+
+        constructor(baseClient: BaseClient) {
+            this.baseClient = baseClient
+            this.createCheckoutSession = this.createCheckoutSession.bind(this)
+            this.createProduct = this.createProduct.bind(this)
+            this.deleteProduct = this.deleteProduct.bind(this)
+            this.generateUploadUrl = this.generateUploadUrl.bind(this)
+            this.listProducts = this.listProducts.bind(this)
+            this.retrieveCheckoutSession = this.retrieveCheckoutSession.bind(this)
+            this.updateProduct = this.updateProduct.bind(this)
+        }
+
+        /**
+         * Creates a Stripe Checkout session for paid items, or returns a download URL for free items.
+         */
+        public async createCheckoutSession(params: RequestType<typeof api_store_create_checkout_session_createCheckoutSession>): Promise<ResponseType<typeof api_store_create_checkout_session_createCheckoutSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/checkout/session`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_create_checkout_session_createCheckoutSession>
+        }
+
+        /**
+         * Creates a new product using previously uploaded cover and file objects.
+         */
+        public async createProduct(params: RequestType<typeof api_store_create_product_createProduct>): Promise<ResponseType<typeof api_store_create_product_createProduct>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/products`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_create_product_createProduct>
+        }
+
+        /**
+         * Deletes a product.
+         */
+        public async deleteProduct(params: { id: number }): Promise<void> {
+            await this.baseClient.callTypedAPI(`/store/products/${encodeURIComponent(params.id)}`, {method: "DELETE", body: undefined})
+        }
+
+        /**
+         * Generates a signed upload URL for either a cover image or a product file.
+         */
+        public async generateUploadUrl(params: RequestType<typeof api_store_generate_upload_url_generateUploadUrl>): Promise<ResponseType<typeof api_store_generate_upload_url_generateUploadUrl>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/upload-url`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_generate_upload_url_generateUploadUrl>
+        }
+
+        /**
+         * Lists active products for the public page.
+         */
+        public async listProducts(): Promise<ResponseType<typeof api_store_list_products_listProducts>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/products`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_list_products_listProducts>
+        }
+
+        /**
+         * Retrieves a checkout session and returns the download URL if paid.
+         */
+        public async retrieveCheckoutSession(params: { sessionId: string }): Promise<ResponseType<typeof api_store_retrieve_checkout_session_retrieveCheckoutSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/checkout/session/${encodeURIComponent(params.sessionId)}`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_retrieve_checkout_session_retrieveCheckoutSession>
+        }
+
+        /**
+         * Updates an existing product. Optional new uploads can be provided by object names.
+         */
+        public async updateProduct(params: RequestType<typeof api_store_update_product_updateProduct>): Promise<ResponseType<typeof api_store_update_product_updateProduct>> {
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                coverObjectName: params.coverObjectName,
+                description:     params.description,
+                fileObjectName:  params.fileObjectName,
+                isActive:        params.isActive,
+                priceCents:      params.priceCents,
+                title:           params.title,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/products/${encodeURIComponent(params.id)}`, {method: "PUT", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_update_product_updateProduct>
         }
     }
 }
