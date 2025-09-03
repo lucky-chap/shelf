@@ -30,7 +30,7 @@ function SiteSettingsContent() {
     customDomain: "",
     backgroundType: "solid" as "solid" | "unsplash" | "upload",
     backgroundImageUrl: "",
-    selectedTheme: null as string | null
+    selectedTheme: "" as string
   });
 
   const { toast } = useToast();
@@ -53,7 +53,34 @@ function SiteSettingsContent() {
 
   const updateConfigMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await backend.config.update(data);
+      // Clean up the data before sending to ensure proper types
+      const updateData: any = {
+        title: data.title,
+        description: data.description,
+        themeColor: data.themeColor,
+        backgroundColor: data.backgroundColor,
+        textColor: data.textColor,
+        backgroundType: data.backgroundType,
+      };
+
+      // Only include optional fields if they have values
+      if (data.avatarUrl && data.avatarUrl.trim()) {
+        updateData.avatarUrl = data.avatarUrl.trim();
+      }
+
+      if (data.customDomain && data.customDomain.trim()) {
+        updateData.customDomain = data.customDomain.trim();
+      }
+
+      if (data.backgroundImageUrl && data.backgroundImageUrl.trim()) {
+        updateData.backgroundImageUrl = data.backgroundImageUrl.trim();
+      }
+
+      if (data.selectedTheme && data.selectedTheme.trim()) {
+        updateData.selectedTheme = data.selectedTheme.trim();
+      }
+
+      return await backend.config.update(updateData);
     },
     onSuccess: () => {
       toast({
@@ -90,7 +117,7 @@ function SiteSettingsContent() {
         customDomain: configQuery.data.customDomain || "",
         backgroundType: nextBackgroundType,
         backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
-        selectedTheme: configQuery.data.selectedTheme
+        selectedTheme: configQuery.data.selectedTheme || ""
       });
     }
   }, [configQuery.data, unsplashEnabled]);
@@ -134,16 +161,14 @@ function SiteSettingsContent() {
   };
 
   const handleDomainChange = (domain: string | null) => {
-    setFormData({
+    const updatedFormData = {
       ...formData,
       customDomain: domain || ""
-    });
+    };
+    setFormData(updatedFormData);
     
     // Auto-save domain changes
-    updateConfigMutation.mutate({
-      ...formData,
-      customDomain: domain || ""
-    });
+    updateConfigMutation.mutate(updatedFormData);
   };
 
   const handleBackgroundTypeChange = (type: "solid" | "unsplash" | "upload") => {
@@ -326,7 +351,7 @@ function SiteSettingsContent() {
               backgroundColor: formData.backgroundColor,
               textColor: formData.textColor,
             }}
-            selectedTheme={formData.selectedTheme}
+            selectedTheme={formData.selectedTheme || null}
             onThemeSelect={handleThemeSelect}
           />
 
@@ -401,12 +426,12 @@ function SiteSettingsContent() {
                       id="themeColor"
                       type="color"
                       value={formData.themeColor}
-                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: null })}
+                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: "" })}
                       className="w-16 h-10"
                     />
                     <Input
                       value={formData.themeColor}
-                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: null })}
+                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: "" })}
                       placeholder="#3B82F6"
                     />
                   </div>
@@ -419,12 +444,12 @@ function SiteSettingsContent() {
                       id="backgroundColor"
                       type="color"
                       value={formData.backgroundColor}
-                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: null })}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: "" })}
                       className="w-16 h-10"
                     />
                     <Input
                       value={formData.backgroundColor}
-                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: null })}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: "" })}
                       placeholder="#FFFFFF"
                     />
                   </div>
@@ -437,12 +462,12 @@ function SiteSettingsContent() {
                       id="textColor"
                       type="color"
                       value={formData.textColor}
-                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: null })}
+                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: "" })}
                       className="w-16 h-10"
                     />
                     <Input
                       value={formData.textColor}
-                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: null })}
+                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: "" })}
                       placeholder="#000000"
                     />
                   </div>

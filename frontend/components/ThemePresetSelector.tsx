@@ -170,7 +170,7 @@ interface ThemePresetSelectorProps {
 export default function ThemePresetSelector({ currentTheme, selectedTheme, onThemeSelect }: ThemePresetSelectorProps) {
   const isCurrentTheme = (preset: ThemePreset) => {
     return selectedTheme === preset.id || (
-      !selectedTheme &&
+      (!selectedTheme || selectedTheme === "") &&
       preset.themeColor === currentTheme.themeColor &&
       preset.backgroundColor === currentTheme.backgroundColor &&
       preset.textColor === currentTheme.textColor
