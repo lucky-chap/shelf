@@ -13,7 +13,9 @@ export default function ConfigGuard({ children }: Props) {
   const stripeOK = isStripeConfigured();
   const unsplashOK = isUnsplashConfigured();
 
-  if (stripeOK && unsplashOK) {
+  // Only block the app if Stripe is not configured.
+  if (stripeOK) {
+    // App can run. Unsplash may be missing; Theme Settings will hide Unsplash option.
     return <>{children}</>;
   }
 
@@ -26,7 +28,7 @@ export default function ConfigGuard({ children }: Props) {
             Configuration Required
           </CardTitle>
           <CardDescription>
-            Stripe and Unsplash must be configured before the app can run.
+            Stripe must be configured before the app can run. Unsplash is optional.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -53,13 +55,13 @@ export default function ConfigGuard({ children }: Props) {
 
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div>
-                <div className="font-medium">VITE_UNSPLASH_ACCESS_KEY</div>
+                <div className="font-medium">VITE_UNSPLASH_ACCESS_KEY (optional)</div>
                 <div className="text-sm text-muted-foreground">
                   {UNSPLASH_ACCESS_KEY ? `Current: ${UNSPLASH_ACCESS_KEY.slice(0, 6)}...` : "Not set"}
                 </div>
               </div>
-              <Badge variant={unsplashOK ? "default" : "destructive"}>
-                {unsplashOK ? "OK" : "Missing"}
+              <Badge variant={unsplashOK ? "default" : "secondary"}>
+                {unsplashOK ? "OK" : "Optional"}
               </Badge>
             </div>
           </div>
@@ -68,12 +70,13 @@ export default function ConfigGuard({ children }: Props) {
             <p>Frontend (in .env):</p>
             <ul className="list-disc list-inside">
               <li>VITE_STRIPE_PUBLISHABLE_KEY (must start with pk_)</li>
-              <li>VITE_UNSPLASH_ACCESS_KEY</li>
+              <li>VITE_UNSPLASH_ACCESS_KEY (optional)</li>
             </ul>
-            <p className="mt-3">Backend (Infrastructure -&gt; Secrets):</p>
+            <p className="mt-3">Backend (Infrastructure -&gt; Secrets or .env):</p>
             <ul className="list-disc list-inside">
               <li>STRIPE_SECRET_KEY (must start with sk_)</li>
-              <li>UNSPLASH_ACCESS_KEY (same as frontend Unsplash key)</li>
+              <li>STRIPE_WEBHOOK_SECRET (optional, must start with whsec_)</li>
+              <li>UNSPLASH_ACCESS_KEY (optional)</li>
             </ul>
           </div>
 

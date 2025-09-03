@@ -37,14 +37,17 @@ function readEncoreSecret(name: "STRIPE_SECRET_KEY" | "STRIPE_WEBHOOK_SECRET"): 
   }
 }
 
-function resolveStripeSecretKey(): NonEmptyString {
+/**
+ * Resolves and validates the Stripe Secret Key (sk_).
+ * This is validated at call-time to avoid crashing at module load.
+ */
+export function getStripeSecretKey(): string {
   const fromEnv = readEnv("STRIPE_SECRET_KEY");
   const fromEncoreSecret = readEncoreSecret("STRIPE_SECRET_KEY");
-  const value = (fromEnv || fromEncoreSecret) as string | null;
+  const value = (fromEnv || (fromEncoreSecret as any)) as string | null;
 
   if (!value) {
     const msg = "Missing STRIPE_SECRET_KEY. Please set it in your environment file.";
-    // Log a clear error and throw to prevent the app from starting improperly
     console.error(msg);
     throw new Error(msg);
   }
@@ -53,13 +56,17 @@ function resolveStripeSecretKey(): NonEmptyString {
     console.error(msg);
     throw new Error(msg);
   }
-  return value as NonEmptyString;
+  return value;
 }
 
-function resolveStripeWebhookSecret(): NonEmptyString | null {
+/**
+ * Resolves and validates the Stripe Webhook Secret (whsec_).
+ * Returns null if not configured. Validated at call-time.
+ */
+export function getStripeWebhookSecret(): string | null {
   const fromEnv = readEnv("STRIPE_WEBHOOK_SECRET");
   const fromEncoreSecret = readEncoreSecret("STRIPE_WEBHOOK_SECRET");
-  const value = (fromEnv || fromEncoreSecret) as string | null;
+  const value = (fromEnv || (fromEncoreSecret as any)) as string | null;
 
   if (!value) return null;
   if (!value.startsWith("whsec_")) {
@@ -67,30 +74,13 @@ function resolveStripeWebhookSecret(): NonEmptyString | null {
     console.error(msg);
     throw new Error(msg);
   }
-  return value as NonEmptyString;
-}
-
-// Eager validation on module load to catch configuration issues early
-const VALIDATED_STRIPE_SECRET_KEY = resolveStripeSecretKey();
-const VALIDATED_STRIPE_WEBHOOK_SECRET = resolveStripeWebhookSecret();
-
-/**
- * Returns the configured Stripe secret key.
- */
-export function getStripeSecretKey(): string {
-  return VALIDATED_STRIPE_SECRET_KEY;
-}
-
-/**
- * Returns the configured Stripe webhook secret or null if not configured.
- */
-export function getStripeWebhookSecret(): string | null {
-  return VALIDATED_STRIPE_WEBHOOK_SECRET ?? null;
+  return value;
 }
 
 /**
  * Creates a new Stripe client using the validated secret key.
  */
 export function newStripeClient(): Stripe {
-  return new Stripe(VALIDATED_STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
+  const key = getStripeSecretKey();
+  return new Stripe(key, { apiVersion: "2024-06-20" });
 }

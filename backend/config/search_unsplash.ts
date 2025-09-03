@@ -1,8 +1,34 @@
 import { api, APIError } from "encore.dev/api";
-import { secret } from "encore.dev/config";
 import { Query } from "encore.dev/api";
 
-const unsplashAccessKey = secret("UNSPLASH_ACCESS_KEY");
+/**
+ * Reads a non-empty environment variable.
+ */
+function readEnv(name: string): string | null {
+  const v = process.env[name];
+  if (v && typeof v === "string" && v.trim().length > 0) {
+    return v;
+  }
+  return null;
+}
+
+/**
+ * Optional Encore secret fallback.
+ * If Encore secrets are configured, we support reading UNSPLASH_ACCESS_KEY from there too.
+ * This keeps local dev simple with .env while allowing production to use Secrets.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function readEncoreSecret(name: "UNSPLASH_ACCESS_KEY"): string | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { secret } = require("encore.dev/config") as typeof import("encore.dev/config");
+    const s = secret(name);
+    const val = s();
+    return val && val.trim().length > 0 ? val : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface SearchUnsplashParams {
   query: Query<string>;
@@ -34,9 +60,9 @@ export interface SearchUnsplashResponse {
 export const searchUnsplash = api<SearchUnsplashParams, SearchUnsplashResponse>(
   { expose: true, method: "GET", path: "/config/unsplash/search" },
   async ({ query, page = 1 }) => {
-    const accessKey = unsplashAccessKey();
+    const accessKey = readEnv("UNSPLASH_ACCESS_KEY") || readEncoreSecret("UNSPLASH_ACCESS_KEY");
     if (!accessKey) {
-      throw APIError.failedPrecondition("Unsplash access key not configured");
+      throw APIError.failedPrecondition("Unsplash access key not configured (UNSPLASH_ACCESS_KEY)");
     }
 
     if (!query || query.trim().length === 0) {
@@ -90,7 +116,6 @@ export const searchUnsplash = api<SearchUnsplashParams, SearchUnsplashResponse>(
       if (error.code) {
         throw error; // Re-throw APIErrors
       }
-      
       console.error("Unsplash search failed:", error);
       throw APIError.internal("Failed to search Unsplash images");
     }

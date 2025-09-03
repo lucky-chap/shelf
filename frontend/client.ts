@@ -588,6 +588,7 @@ import { generateUploadUrl as api_store_generate_upload_url_generateUploadUrl } 
 import { listProducts as api_store_list_products_listProducts } from "~backend/store/list_products";
 import { retrieveCheckoutSession as api_store_retrieve_checkout_session_retrieveCheckoutSession } from "~backend/store/retrieve_checkout_session";
 import { updateProduct as api_store_update_product_updateProduct } from "~backend/store/update_product";
+import { stripeWebhook as api_store_webhook_stripeWebhook } from "~backend/store/webhook";
 
 export namespace store {
 
@@ -602,6 +603,7 @@ export namespace store {
             this.generateUploadUrl = this.generateUploadUrl.bind(this)
             this.listProducts = this.listProducts.bind(this)
             this.retrieveCheckoutSession = this.retrieveCheckoutSession.bind(this)
+            this.stripeWebhook = this.stripeWebhook.bind(this)
             this.updateProduct = this.updateProduct.bind(this)
         }
 
@@ -655,6 +657,27 @@ export namespace store {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/store/checkout/session/${encodeURIComponent(params.sessionId)}`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_retrieve_checkout_session_retrieveCheckoutSession>
+        }
+
+        /**
+         * Handles Stripe webhook events.
+         */
+        public async stripeWebhook(params: RequestType<typeof api_store_webhook_stripeWebhook>): Promise<ResponseType<typeof api_store_webhook_stripeWebhook>> {
+            // Convert our params into the objects we need for the request
+            const headers = makeRecord<string, string>({
+                "stripe-signature": params.stripeSignature,
+            })
+
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                data: params.data,
+                id:   params.id,
+                type: params.type,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/store/stripe/webhook`, {headers, method: "POST", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_webhook_stripeWebhook>
         }
 
         /**

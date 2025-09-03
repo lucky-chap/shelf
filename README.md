@@ -77,16 +77,17 @@ This project uses different environment variable conventions for the frontend (V
 
 - Backend (Node/Encore):
   - Access with process.env.YOUR_KEY (server-side only).
-  - This project also supports Encore secrets as a fallback where applicable.
+  - If you deploy on Encore, you can also configure [Secrets] in the Infrastructure tab. The backend will first check process.env and then fall back to Encore Secrets when available.
 
 Create a .env file in the project root by copying .env.example and filling in your real values.
 
 Example .env:
 
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_123
-VITE_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+VITE_UNSPLASH_ACCESS_KEY=your_unsplash_key
 STRIPE_SECRET_KEY=sk_test_123
 STRIPE_WEBHOOK_SECRET=whsec_123
+UNSPLASH_ACCESS_KEY=your_unsplash_key
 
 Notes:
 - Do not hardcode keys in code. Always use environment variables.
@@ -94,22 +95,24 @@ Notes:
 
 ## Mandatory Configuration
 
-Stripe and Unsplash configuration is required for the app to run.
+- Stripe is REQUIRED (Checkout and secure downloads).
+- Unsplash is OPTIONAL (enables Unsplash background selection in Theme Settings). If not set, the Unsplash option will be hidden.
 
 Required configuration:
 - Frontend (Vite env, in .env):
   - VITE_STRIPE_PUBLISHABLE_KEY (must start with pk_)
-  - VITE_UNSPLASH_ACCESS_KEY (optional if you don't use Unsplash features)
+  - VITE_UNSPLASH_ACCESS_KEY (optional, only for client-side references)
 
-- Backend (Node env, in .env or platform secrets):
+- Backend (Node env, in .env or Encore Secrets):
   - STRIPE_SECRET_KEY (must start with sk_)
-  - STRIPE_WEBHOOK_SECRET (optional, only if you add webhooks; must start with whsec_)
+  - STRIPE_WEBHOOK_SECRET (optional, must start with whsec_ if you use webhooks)
+  - UNSPLASH_ACCESS_KEY (optional, used server-side when searching Unsplash)
 
 Important:
 - Never put secret keys (sk_ or whsec_) in frontend code.
-- The backend validates that STRIPE_SECRET_KEY exists and starts with "sk_".
-- The frontend enforces that VITE_STRIPE_PUBLISHABLE_KEY exists and starts with "pk_".
-- On startup, the backend Stripe module validates configuration and throws clear errors if missing.
+- The backend validates that STRIPE_SECRET_KEY exists and starts with "sk_" when Stripe functionality is used.
+- The webhook endpoint validates STRIPE_WEBHOOK_SECRET if configured.
+- The Unsplash backend API validates that UNSPLASH_ACCESS_KEY is set, or returns a clear error.
 
 ### Stripe Configuration
 
@@ -120,11 +123,36 @@ Important:
 - Frontend env:
   - VITE_STRIPE_PUBLISHABLE_KEY = pk_test_...
 
+- Test payment flow:
+  1. Set environment variables as above and restart the app.
+  2. Create a product in the Admin dashboard (Store tab) and set a price (>= $0.50 for paid, or 0 for free).
+  3. On the public page, click Buy/Download on the product card.
+  4. For paid products, you will be redirected to Stripe Checkout. Use Stripe test card 4242 4242 4242 4242 with any valid future expiry and any CVC and ZIP.
+  5. After payment, you will land at /checkout/success where the app verifies the session and provides a signed download link.
+
+- Webhook (optional but recommended):
+  - Endpoint: POST /store/stripe/webhook
+  - Set the webhook secret (STRIPE_WEBHOOK_SECRET) from your Stripe Dashboard → Developers → Webhooks.
+  - The webhook handler validates events using the configured secret. Due to framework request parsing, if signature verification fails, it falls back to verifying the event by retrieving it using the event id from Stripe's API.
+
 ### Unsplash Configuration
 
-- Backend secret:
-  - UNSPLASH_ACCESS_KEY (used server-side when searching Unsplash)
+- Backend env:
+  - UNSPLASH_ACCESS_KEY = your_unsplash_key (server-side)
 
 - Frontend env:
-  - VITE_UNSPLASH_ACCESS_KEY (used for client-side integrations)
+  - VITE_UNSPLASH_ACCESS_KEY = your_unsplash_key (used for enabling the UI option)
 
+- Test Unsplash image search:
+  1. Set both UNSPLASH_ACCESS_KEY and VITE_UNSPLASH_ACCESS_KEY.
+  2. Open Admin → Settings → Theme → Background Settings.
+  3. Choose "Unsplash Image", search, and select an image.
+  4. Save settings, then preview on the landing page.
+
+## General Notes
+
+- Ensure .env is loaded for both Vite (frontend) and Node/Encore (backend).
+- Never hardcode keys; always use environment variables (or Encore Secrets for backend).
+- Clear errors are returned if configuration is missing or invalid.
+
+[Secrets]: https://encore.dev/docs/primitives/config

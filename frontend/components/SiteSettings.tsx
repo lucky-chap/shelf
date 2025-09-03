@@ -17,6 +17,7 @@ import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
 import backend from "~backend/client";
+import { isUnsplashConfigured as isUnsplashConfiguredFrontend } from "../config";
 
 function SiteSettingsContent() {
   const [formData, setFormData] = useState({
@@ -34,6 +35,7 @@ function SiteSettingsContent() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const unsplashEnabled = isUnsplashConfiguredFrontend();
 
   const configQuery = useQuery({
     queryKey: ["config"],
@@ -72,6 +74,12 @@ function SiteSettingsContent() {
 
   useEffect(() => {
     if (configQuery.data) {
+      // If Unsplash is not configured but backgroundType is 'unsplash', force it to 'solid' to avoid unusable UI.
+      const nextBackgroundType =
+        !unsplashEnabled && configQuery.data.backgroundType === "unsplash"
+          ? "solid"
+          : (configQuery.data.backgroundType as "solid" | "unsplash" | "upload") || "solid";
+
       setFormData({
         title: configQuery.data.title,
         description: configQuery.data.description,
@@ -80,12 +88,12 @@ function SiteSettingsContent() {
         textColor: configQuery.data.textColor,
         avatarUrl: configQuery.data.avatarUrl || "",
         customDomain: configQuery.data.customDomain || "",
-        backgroundType: (configQuery.data.backgroundType as "solid" | "unsplash" | "upload") || "solid",
+        backgroundType: nextBackgroundType,
         backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
         selectedTheme: configQuery.data.selectedTheme
       });
     }
-  }, [configQuery.data]);
+  }, [configQuery.data, unsplashEnabled]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +147,15 @@ function SiteSettingsContent() {
   };
 
   const handleBackgroundTypeChange = (type: "solid" | "unsplash" | "upload") => {
+    // Prevent selecting unsplash if not configured
+    if (type === "unsplash" && !unsplashEnabled) {
+      toast({
+        title: "Unsplash Not Configured",
+        description: "Add VITE_UNSPLASH_ACCESS_KEY (frontend) and UNSPLASH_ACCESS_KEY (backend) to enable Unsplash.",
+        variant: "destructive",
+      });
+      return;
+    }
     setFormData({
       ...formData,
       backgroundType: type,
@@ -334,10 +351,12 @@ function SiteSettingsContent() {
                     <RadioGroupItem value="solid" id="solid" />
                     <Label htmlFor="solid">Solid Color</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="unsplash" id="unsplash" />
-                    <Label htmlFor="unsplash">Unsplash Image</Label>
-                  </div>
+                  {unsplashEnabled && (
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="unsplash" id="unsplash" />
+                      <Label htmlFor="unsplash">Unsplash Image</Label>
+                    </div>
+                  )}
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="upload" id="upload" />
                     <Label htmlFor="upload">Custom Upload (Coming Soon)</Label>
@@ -345,7 +364,7 @@ function SiteSettingsContent() {
                 </RadioGroup>
               </div>
 
-              {formData.backgroundType === "unsplash" && (
+              {formData.backgroundType === "unsplash" && unsplashEnabled && (
                 <UnsplashImageSearch
                   selectedImageUrl={formData.backgroundImageUrl}
                   onImageSelect={handleUnsplashImageSelect}
