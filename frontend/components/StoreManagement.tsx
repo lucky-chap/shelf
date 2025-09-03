@@ -105,20 +105,21 @@ function StoreManagementContent() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!file) {
-        throw new Error("Product file is required");
-      }
-      
+      // Validate inputs before processing
       if (!title.trim()) {
         throw new Error("Product title is required");
       }
       
-      if (priceCents < 0) {
-        throw new Error("Price cannot be negative");
+      if (!file) {
+        throw new Error("Product file is required");
+      }
+      
+      if (typeof priceCents !== 'number' || priceCents < 0) {
+        throw new Error("Price must be a valid number greater than or equal to 0");
       }
       
       if (!Number.isInteger(priceCents)) {
-        throw new Error("Price must be a whole number");
+        throw new Error("Price must be a whole number (no decimals in cents)");
       }
 
       try {
@@ -130,16 +131,33 @@ function StoreManagementContent() {
           throw new Error("Failed to convert file to valid base64 format");
         }
 
+        // Prepare the base payload structure
+        const payload: any = {
+          title: title.trim(),
+          priceCents: priceCents,
+          currency: "USD",
+          productFile: {
+            fileName: file.name.trim() || "unnamed_file",
+            contentType: fileB64.contentType || "application/octet-stream",
+            base64Data: fileB64.base64,
+          }
+        };
+
+        // Only add description if it's not empty
+        const trimmedDescription = description.trim();
+        if (trimmedDescription) {
+          payload.description = trimmedDescription;
+        }
+
         // Prepare cover image if provided
-        let coverPayload = undefined;
         if (cover) {
           try {
             const coverB64 = await bytesToBase64(cover);
             
             // Only include cover if we got valid base64 data
             if (coverB64.base64 && isValidBase64(coverB64.base64)) {
-              coverPayload = {
-                fileName: cover.name.trim(),
+              payload.coverImage = {
+                fileName: cover.name.trim() || "cover_image",
                 contentType: coverB64.contentType || "image/jpeg",
                 base64Data: coverB64.base64,
               };
@@ -152,37 +170,26 @@ function StoreManagementContent() {
           }
         }
 
-        // Prepare the payload with strict validation
-        const payload = {
-          title: title.trim(),
-          description: description.trim() || undefined,
-          priceCents: Math.round(priceCents), // Ensure it's an integer
-          currency: "USD",
-          productFile: {
-            fileName: file.name.trim(),
-            contentType: fileB64.contentType || "application/octet-stream",
-            base64Data: fileB64.base64,
-          },
-          coverImage: coverPayload,
-        };
-
-        // Validate payload structure before sending
-        if (!payload.title) {
-          throw new Error("Title is required");
+        // Final validation of the payload structure
+        if (!payload.title || typeof payload.title !== 'string') {
+          throw new Error("Invalid title");
         }
         
         if (typeof payload.priceCents !== 'number' || payload.priceCents < 0) {
           throw new Error("Invalid price");
         }
         
-        if (!payload.productFile.fileName || !payload.productFile.base64Data || !payload.productFile.contentType) {
+        if (!payload.productFile || 
+            !payload.productFile.fileName || 
+            !payload.productFile.base64Data || 
+            !payload.productFile.contentType) {
           throw new Error("Invalid product file data");
         }
 
         return await backend.store.createProduct(payload);
       } catch (error: any) {
         console.error("Error preparing product data:", error);
-        throw error; // Re-throw the original error instead of wrapping it
+        throw error; // Re-throw the original error
       }
     },
     onSuccess: () => {
@@ -204,15 +211,15 @@ function StoreManagementContent() {
       
       if (error?.message) {
         // Check for specific validation errors
-        if (error.message.includes("title")) {
+        if (error.message.includes("title") || error.message.includes("Title")) {
           errorMessage = "Product title is invalid. Please check your title and try again.";
-        } else if (error.message.includes("priceCents")) {
+        } else if (error.message.includes("price") || error.message.includes("Price")) {
           errorMessage = "Product price is invalid. Please enter a valid price.";
-        } else if (error.message.includes("productFile")) {
+        } else if (error.message.includes("file") || error.message.includes("File")) {
           errorMessage = "Product file is invalid. Please select a valid file.";
         } else if (error.message.includes("base64")) {
           errorMessage = "File upload failed. Please try selecting the file again.";
-        } else if (error.message.includes("validation") || error.message.includes("invalid_argument")) {
+        } else if (error.message.includes("validation") || error.message.includes("RequestValidationError")) {
           errorMessage = "Invalid product data. Please check all fields and try again.";
         } else if (error.message.includes("Polar")) {
           errorMessage = error.message;
@@ -235,6 +242,16 @@ function StoreManagementContent() {
     setPriceCents(0);
     setFile(null);
     setCover(null);
+  };
+
+  const handlePriceChange = (value: string) => {
+    const dollars = parseFloat(value || "0");
+    if (isNaN(dollars) || dollars < 0) {
+      setPriceCents(0);
+    } else {
+      const cents = Math.round(dollars * 100);
+      setPriceCents(cents);
+    }
   };
 
   if (!configQuery.data?.enabled) {
@@ -339,7 +356,7 @@ function StoreManagementContent() {
                 }}
               >
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
                     placeholder="Product title"
@@ -357,7 +374,7 @@ function StoreManagementContent() {
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
-                    placeholder="Brief description of the product"
+                    placeholder="Brief description of the product (optional)"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
@@ -379,11 +396,8 @@ function StoreManagementContent() {
                         min={0}
                         step="0.01"
                         value={(priceCents / 100).toFixed(2)}
-                        onChange={(e) => {
-                          const dollars = parseFloat(e.target.value || "0");
-                          const cents = Math.round(dollars * 100);
-                          setPriceCents(Number.isFinite(cents) && cents >= 0 ? cents : 0);
-                        }}
+                        onChange={(e) => handlePriceChange(e.target.value)}
+                        placeholder="0.00"
                       />
                     </div>
                     <div className="text-xs text-muted-foreground">
