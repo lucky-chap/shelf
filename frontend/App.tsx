@@ -32,7 +32,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/admin" element={<AdminDashboard />} />
-                  {/* Redirect legacy URLs no longer needed */}
+                  {/* Redirect legacy URLs from removed features */}
                   <Route path="/product/*" element={<Navigate to="/" replace />} />
                   <Route path="/store/*" element={<Navigate to="/" replace />} />
                   <Route path="/checkout/*" element={<Navigate to="/" replace />} />

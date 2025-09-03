@@ -4,11 +4,10 @@ A simple landing page with:
 - Public landing page with custom theme
 - Links list with click tracking
 - Guestbook with moderation
+- Digital Store with file uploads and Stripe checkout
 - Admin dashboard with authentication
 - Analytics for links and guestbook activity
 - Custom domain configuration with DNS setup
-
-Note: The Digital Store (products/checkout/downloads) has been removed.
 
 ## Features
 
@@ -16,6 +15,13 @@ Note: The Digital Store (products/checkout/downloads) has been removed.
   - Create, update, delete, and reorder links (drag-and-drop)
   - Click tracking and analytics
   - Link scheduling for time-limited promotions
+
+- Digital Store
+  - Upload and sell digital products (PDFs, images, etc.)
+  - Stripe integration for secure payments
+  - Free downloads (price = 0) with instant access
+  - File uploads for cover photos and digital products
+  - Secure download URLs with automatic expiration
 
 - Guestbook
   - Public submissions with moderation
@@ -80,10 +86,28 @@ Example .env:
 
 VITE_UNSPLASH_ACCESS_KEY=your_unsplash_key
 UNSPLASH_ACCESS_KEY=your_unsplash_key
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 
 Notes:
 - Do not hardcode keys in code. Always use environment variables.
 - Vite only exposes variables prefixed with VITE_ to the browser runtime.
+
+## Required Configuration
+
+### Stripe (Required for Digital Store)
+- Frontend env:
+  - VITE_STRIPE_PUBLISHABLE_KEY = pk_test_... (publishable key, safe to expose)
+
+- Backend env:
+  - STRIPE_SECRET_KEY = sk_test_... (secret key, server-side only)
+
+- Test the store:
+  1. Set both VITE_STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY.
+  2. Open Admin → Store → Add Product.
+  3. Upload a cover photo and digital file, set a price > 0.
+  4. Visit the landing page and click "Buy Now" to test Stripe checkout.
+  5. Use test card: 4242 4242 4242 4242, any future date, any CVC.
 
 ## Optional Configuration
 
@@ -119,6 +143,6 @@ Important:
 - Ensure .env is loaded for both Vite (frontend) and Node/Encore (backend).
 - Never hardcode keys; always use environment variables (or Encore Secrets for backend).
 - Clear errors are returned if configuration is missing or invalid.
-- All legacy /store, /product/*, and /checkout/* URLs now redirect to the home page.
+- For Stripe testing, use test card numbers: https://stripe.com/docs/testing#cards
 
 [Secrets]: https://encore.dev/docs/primitives/config

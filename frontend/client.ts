@@ -38,7 +38,9 @@ export class Client {
     public readonly config: config.ServiceClient
     public readonly guestbook: guestbook.ServiceClient
     public readonly links: links.ServiceClient
+    public readonly products: products.ServiceClient
     public readonly site: site.ServiceClient
+    public readonly stripe: stripe.ServiceClient
     public readonly users: users.ServiceClient
     private readonly options: ClientOptions
     private readonly target: string
@@ -59,7 +61,9 @@ export class Client {
         this.config = new config.ServiceClient(base)
         this.guestbook = new guestbook.ServiceClient(base)
         this.links = new links.ServiceClient(base)
+        this.products = new products.ServiceClient(base)
         this.site = new site.ServiceClient(base)
+        this.stripe = new stripe.ServiceClient(base)
         this.users = new users.ServiceClient(base)
     }
 
@@ -542,6 +546,94 @@ export namespace links {
 /**
  * Import the endpoint handlers to derive the types for the client.
  */
+import { create as api_products_create_create } from "~backend/products/create";
+import { deleteFn as api_products_delete_deleteFn } from "~backend/products/delete";
+import { list as api_products_list_list } from "~backend/products/list";
+import { update as api_products_update_update } from "~backend/products/update";
+import { uploadCover as api_products_upload_cover_uploadCover } from "~backend/products/upload_cover";
+import { uploadFile as api_products_upload_file_uploadFile } from "~backend/products/upload_file";
+
+export namespace products {
+
+    export class ServiceClient {
+        private baseClient: BaseClient
+
+        constructor(baseClient: BaseClient) {
+            this.baseClient = baseClient
+            this.create = this.create.bind(this)
+            this.deleteFn = this.deleteFn.bind(this)
+            this.list = this.list.bind(this)
+            this.update = this.update.bind(this)
+            this.uploadCover = this.uploadCover.bind(this)
+            this.uploadFile = this.uploadFile.bind(this)
+        }
+
+        /**
+         * Creates a new digital product.
+         */
+        public async create(params: RequestType<typeof api_products_create_create>): Promise<ResponseType<typeof api_products_create_create>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/products`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_create_create>
+        }
+
+        /**
+         * Deletes a product.
+         */
+        public async deleteFn(params: { id: number }): Promise<void> {
+            await this.baseClient.callTypedAPI(`/products/${encodeURIComponent(params.id)}`, {method: "DELETE", body: undefined})
+        }
+
+        /**
+         * Retrieves all active products for public display.
+         */
+        public async list(): Promise<ResponseType<typeof api_products_list_list>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/products`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_list_list>
+        }
+
+        /**
+         * Updates an existing product.
+         */
+        public async update(params: RequestType<typeof api_products_update_update>): Promise<ResponseType<typeof api_products_update_update>> {
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                coverUrl:    params.coverUrl,
+                description: params.description,
+                downloadUrl: params.downloadUrl,
+                priceCents:  params.priceCents,
+                title:       params.title,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/products/${encodeURIComponent(params.id)}`, {method: "PUT", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_update_update>
+        }
+
+        /**
+         * Uploads a cover image for a product.
+         */
+        public async uploadCover(params: RequestType<typeof api_products_upload_cover_uploadCover>): Promise<ResponseType<typeof api_products_upload_cover_uploadCover>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/products/upload-cover`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_upload_cover_uploadCover>
+        }
+
+        /**
+         * Uploads a digital file for a product and returns a secure download URL.
+         */
+        public async uploadFile(params: RequestType<typeof api_products_upload_file_uploadFile>): Promise<ResponseType<typeof api_products_upload_file_uploadFile>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/products/upload-file`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_products_upload_file_uploadFile>
+        }
+    }
+}
+
+/**
+ * Import the endpoint handlers to derive the types for the client.
+ */
 import { getConfig as api_site_get_config_getConfig } from "~backend/site/get_config";
 import { updateConfig as api_site_update_config_updateConfig } from "~backend/site/update_config";
 
@@ -572,6 +664,43 @@ export namespace site {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/site/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_update_config_updateConfig>
+        }
+    }
+}
+
+/**
+ * Import the endpoint handlers to derive the types for the client.
+ */
+import { createCheckoutSession as api_stripe_create_checkout_session_createCheckoutSession } from "~backend/stripe/create_checkout_session";
+import { getCheckoutSession as api_stripe_get_checkout_session_getCheckoutSession } from "~backend/stripe/get_checkout_session";
+
+export namespace stripe {
+
+    export class ServiceClient {
+        private baseClient: BaseClient
+
+        constructor(baseClient: BaseClient) {
+            this.baseClient = baseClient
+            this.createCheckoutSession = this.createCheckoutSession.bind(this)
+            this.getCheckoutSession = this.getCheckoutSession.bind(this)
+        }
+
+        /**
+         * Creates a Stripe checkout session for a product purchase.
+         */
+        public async createCheckoutSession(params: RequestType<typeof api_stripe_create_checkout_session_createCheckoutSession>): Promise<ResponseType<typeof api_stripe_create_checkout_session_createCheckoutSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/stripe/create-checkout-session`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_stripe_create_checkout_session_createCheckoutSession>
+        }
+
+        /**
+         * Retrieves a Stripe checkout session and extract download information.
+         */
+        public async getCheckoutSession(params: { sessionId: string }): Promise<ResponseType<typeof api_stripe_get_checkout_session_getCheckoutSession>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/stripe/checkout-session/${encodeURIComponent(params.sessionId)}`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_stripe_get_checkout_session_getCheckoutSession>
         }
     }
 }
