@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Download, ImageOff } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
-import { stripePublishableKey } from "../config";
 import { useToast } from "@/components/ui/use-toast";
 import DownloadDialog from "./dialogs/DownloadDialog";
 import LoadingSpinner from "./LoadingSpinner";
 import backend from "~backend/client";
+import { getStripe, isStripeConfigured } from "../lib/stripe";
 
 interface Product {
   id: number;
@@ -51,45 +50,49 @@ export default function ProductsList() {
         setShowDialog(true);
         return;
       }
+
       const sessionId = resp.sessionId;
+      const sessionUrl = resp.sessionUrl;
+
       if (!sessionId) {
-        // Fallback to sessionUrl if provided
-        if (resp.sessionUrl) {
-          window.location.assign(resp.sessionUrl);
+        if (sessionUrl) {
+          // Fallback: redirect to Stripe-hosted Checkout URL
+          window.location.assign(sessionUrl);
           return;
         }
         toast({
           title: "Checkout Error",
-          description: "Unable to initiate Stripe Checkout.",
+          description: "Unable to initiate Stripe Checkout session.",
           variant: "destructive",
         });
         return;
       }
 
-      // Redirect using Stripe.js
-      if (!stripePublishableKey) {
-        // fallback: direct to session url if available
-        if (resp.sessionUrl) {
-          window.location.assign(resp.sessionUrl);
-          return;
+      // Redirect using Stripe.js with publishable key
+      try {
+        if (!isStripeConfigured()) {
+          if (sessionUrl) {
+            window.location.assign(sessionUrl);
+            return;
+          }
+          throw new Error("Stripe publishable key is missing or invalid. Set it in frontend/config.ts as a 'pk_' key.");
         }
+        const stripe = await getStripe();
+        if (!stripe) {
+          throw new Error("Failed to initialize Stripe.js");
+        }
+        const res = await stripe.redirectToCheckout({ sessionId });
+        if (res.error) {
+          throw res.error;
+        }
+      } catch (error: any) {
+        console.error("Stripe redirect error:", error);
         toast({
           title: "Stripe Not Configured",
-          description: "Publishable key missing. Set VITE_STRIPE_PUBLISHABLE_KEY.",
+          description: error?.message || "Publishable key missing or invalid. Set it in frontend/config.ts.",
           variant: "destructive",
         });
-        return;
       }
-      const stripe = await loadStripe(stripePublishableKey);
-      if (!stripe) {
-        toast({
-          title: "Stripe Load Failed",
-          description: "Could not initialize Stripe.js",
-          variant: "destructive",
-        });
-        return;
-      }
-      await stripe.redirectToCheckout({ sessionId });
     },
     onError: (error: any) => {
       console.error("Checkout error:", error);

@@ -1,4 +1,4 @@
 // The Stripe publishable key to initialize Stripe.js on the frontend.
-// TODO: Set this to your Stripe publishable key, for example: "pk_live_..."
-// This value is used to redirect to Stripe Checkout.
+// Set this to your Stripe publishable key (starts with "pk_"), for example: "pk_test_123...".
+// IMPORTANT: Do NOT put any secret keys (sk_...) here; secrets must only be set on the backend.
 export const stripePublishableKey = "";

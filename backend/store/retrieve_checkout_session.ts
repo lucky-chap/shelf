@@ -20,8 +20,12 @@ export const retrieveCheckoutSession = api<RetrieveCheckoutSessionRequest, Retri
   async ({ sessionId }) => {
     const sk = STRIPE_SECRET_KEY();
     if (!sk) {
-      throw APIError.failedPrecondition("Stripe secret key not configured");
+      throw APIError.failedPrecondition("Stripe secret key not configured. Set STRIPE_SECRET_KEY in Infrastructure -> Secrets.");
     }
+    if (!sk.startsWith("sk_")) {
+      throw APIError.failedPrecondition("Invalid Stripe secret key configured. It must start with 'sk_'.");
+    }
+
     const stripe = new Stripe(sk, { apiVersion: "2024-06-20" });
 
     const session = await stripe.checkout.sessions.retrieve(sessionId, {

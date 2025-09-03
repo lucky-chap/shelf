@@ -74,9 +74,23 @@ The system provides real-time verification and detailed setup instructions for p
 - Custom domains require proper DNS configuration before activation.
 - SSL certificates are automatically managed for verified custom domains.
 
-### Environment Variables
+### Stripe Configuration
 
-- Backend secret:
-  - STRIPE_SECRET_KEY (set in Infrastructure -> Secrets)
-- Frontend config (set in frontend/config.ts):
-  - VITE_STRIPE_PUBLISHABLE_KEY
+This project uses Stripe with proper key separation:
+
+- Backend (Encore server) uses the SECRET key (sk_...) for secure operations.
+- Frontend (React/Vite) uses the PUBLISHABLE key (pk_...) with Stripe.js only.
+
+Configure as follows:
+
+- Backend secret (set in Infrastructure -> Secrets):
+  - STRIPE_SECRET_KEY = sk_test_123...
+
+- Frontend config (edit frontend/config.ts):
+  - stripePublishableKey = "pk_test_123..."
+
+Important:
+- Never put secret keys in the frontend.
+- The backend validates that the secret key exists and starts with "sk_".
+- The frontend loader validates that the publishable key exists and starts with "pk_".
+
