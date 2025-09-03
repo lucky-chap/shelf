@@ -70,12 +70,24 @@ function StoreManagementContent() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Product file is required");
-      if (!title.trim()) throw new Error("Product title is required");
-      if (priceCents < 0) throw new Error("Price cannot be negative");
-      if (!Number.isInteger(priceCents)) throw new Error("Price must be a whole number");
+      if (!file) {
+        throw new Error("Product file is required");
+      }
+      
+      if (!title.trim()) {
+        throw new Error("Product title is required");
+      }
+      
+      if (priceCents < 0) {
+        throw new Error("Price cannot be negative");
+      }
+      
+      if (!Number.isInteger(priceCents)) {
+        throw new Error("Price must be a whole number");
+      }
 
       try {
+        // Convert product file to base64
         const fileB64 = await bytesToBase64(file);
         
         // Validate that we got valid base64 data
@@ -83,18 +95,37 @@ function StoreManagementContent() {
           throw new Error("Failed to convert file to base64");
         }
 
-        let coverPayload: any = undefined;
+        // Test if base64 is valid
+        try {
+          const testBuffer = Buffer.from(fileB64.base64, 'base64');
+          if (testBuffer.length === 0) {
+            throw new Error("Invalid base64 data generated");
+          }
+        } catch (error) {
+          throw new Error("Generated base64 data is invalid");
+        }
+
+        // Prepare cover image if provided
+        let coverPayload = undefined;
         if (cover) {
           try {
             const coverB64 = await bytesToBase64(cover);
             
             // Only include cover if we got valid base64 data
             if (coverB64.base64 && coverB64.base64.trim().length > 0) {
-              coverPayload = {
-                fileName: cover.name.trim(),
-                contentType: coverB64.contentType || "image/jpeg",
-                base64Data: coverB64.base64,
-              };
+              // Test if cover base64 is valid
+              try {
+                const testBuffer = Buffer.from(coverB64.base64, 'base64');
+                if (testBuffer.length > 0) {
+                  coverPayload = {
+                    fileName: cover.name.trim(),
+                    contentType: coverB64.contentType || "image/jpeg",
+                    base64Data: coverB64.base64,
+                  };
+                }
+              } catch (error) {
+                console.warn("Invalid cover base64 data, skipping cover image");
+              }
             }
           } catch (coverError) {
             console.warn("Failed to process cover image, proceeding without it:", coverError);
@@ -102,6 +133,7 @@ function StoreManagementContent() {
           }
         }
 
+        // Prepare the payload with strict validation
         const payload = {
           title: title.trim(),
           description: description.trim() || undefined,
@@ -115,10 +147,23 @@ function StoreManagementContent() {
           coverImage: coverPayload,
         };
 
+        // Validate payload structure before sending
+        if (!payload.title) {
+          throw new Error("Title is required");
+        }
+        
+        if (typeof payload.priceCents !== 'number' || payload.priceCents < 0) {
+          throw new Error("Invalid price");
+        }
+        
+        if (!payload.productFile.fileName || !payload.productFile.base64Data || !payload.productFile.contentType) {
+          throw new Error("Invalid product file data");
+        }
+
         return await backend.store.createProduct(payload);
       } catch (error: any) {
         console.error("Error preparing product data:", error);
-        throw new Error(`Failed to prepare product data: ${error.message}`);
+        throw error; // Re-throw the original error instead of wrapping it
       }
     },
     onSuccess: () => {
@@ -139,9 +184,18 @@ function StoreManagementContent() {
       let errorMessage = "Failed to create product. Please try again.";
       
       if (error?.message) {
-        if (error.message.includes("invalid_argument")) {
-          errorMessage = "Invalid product data. Please check your inputs and try again.";
-        } else if (error.message.includes("Failed to prepare product data")) {
+        // Check for specific validation errors
+        if (error.message.includes("title")) {
+          errorMessage = "Product title is invalid. Please check your title and try again.";
+        } else if (error.message.includes("priceCents")) {
+          errorMessage = "Product price is invalid. Please enter a valid price.";
+        } else if (error.message.includes("productFile")) {
+          errorMessage = "Product file is invalid. Please select a valid file.";
+        } else if (error.message.includes("base64")) {
+          errorMessage = "File upload failed. Please try selecting the file again.";
+        } else if (error.message.includes("validation") || error.message.includes("invalid_argument")) {
+          errorMessage = "Invalid product data. Please check all fields and try again.";
+        } else if (error.message.includes("Polar")) {
           errorMessage = error.message;
         } else {
           errorMessage = error.message;
@@ -155,6 +209,14 @@ function StoreManagementContent() {
       });
     },
   });
+
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setPriceCents(0);
+    setFile(null);
+    setCover(null);
+  };
 
   if (!configQuery.data?.enabled) {
     return (
@@ -350,20 +412,31 @@ function StoreManagementContent() {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full flex items-center gap-2"
-                  disabled={isDisabled || createMutation.isPending}
-                >
-                  {createMutation.isPending ? (
-                    <LoadingSpinner size="sm" text="Creating..." />
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4" />
-                      Create Product
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    className="flex-1 flex items-center gap-2"
+                    disabled={isDisabled || createMutation.isPending}
+                  >
+                    {createMutation.isPending ? (
+                      <LoadingSpinner size="sm" text="Creating..." />
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4" />
+                        Create Product
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetForm}
+                    disabled={createMutation.isPending}
+                  >
+                    Reset
+                  </Button>
+                </div>
                 
                 {isDisabled && (
                   <div className="text-xs text-muted-foreground">

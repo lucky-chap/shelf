@@ -41,25 +41,49 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
   async (req) => {
     const { org } = ensureConfigured();
 
-    // Validate required fields
-    if (!req.title || typeof req.title !== 'string' || !req.title.trim()) {
-      throw APIError.invalidArgument("title is required and must be a non-empty string");
+    // Validate required fields with more specific error messages
+    if (!req.title || typeof req.title !== 'string') {
+      throw APIError.invalidArgument("title is required and must be a string");
     }
     
-    if (typeof req.priceCents !== 'number' || req.priceCents < 0) {
-      throw APIError.invalidArgument("priceCents must be a non-negative number");
+    if (!req.title.trim()) {
+      throw APIError.invalidArgument("title cannot be empty");
+    }
+    
+    if (typeof req.priceCents !== 'number') {
+      throw APIError.invalidArgument("priceCents must be a number");
+    }
+    
+    if (req.priceCents < 0) {
+      throw APIError.invalidArgument("priceCents cannot be negative");
+    }
+    
+    if (!Number.isInteger(req.priceCents)) {
+      throw APIError.invalidArgument("priceCents must be a whole number (integer)");
     }
     
     if (!req.productFile) {
       throw APIError.invalidArgument("productFile is required");
     }
     
-    if (!req.productFile.fileName || typeof req.productFile.fileName !== 'string' || !req.productFile.fileName.trim()) {
-      throw APIError.invalidArgument("productFile.fileName is required and must be a non-empty string");
+    if (typeof req.productFile !== 'object') {
+      throw APIError.invalidArgument("productFile must be an object");
     }
     
-    if (!req.productFile.base64Data || typeof req.productFile.base64Data !== 'string' || !req.productFile.base64Data.trim()) {
-      throw APIError.invalidArgument("productFile.base64Data is required and must be a non-empty string");
+    if (!req.productFile.fileName || typeof req.productFile.fileName !== 'string') {
+      throw APIError.invalidArgument("productFile.fileName is required and must be a string");
+    }
+    
+    if (!req.productFile.fileName.trim()) {
+      throw APIError.invalidArgument("productFile.fileName cannot be empty");
+    }
+    
+    if (!req.productFile.base64Data || typeof req.productFile.base64Data !== 'string') {
+      throw APIError.invalidArgument("productFile.base64Data is required and must be a string");
+    }
+    
+    if (!req.productFile.base64Data.trim()) {
+      throw APIError.invalidArgument("productFile.base64Data cannot be empty");
     }
     
     if (!req.productFile.contentType || typeof req.productFile.contentType !== 'string') {
@@ -68,12 +92,24 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
 
     // Validate optional cover image if provided
     if (req.coverImage) {
-      if (!req.coverImage.fileName || typeof req.coverImage.fileName !== 'string' || !req.coverImage.fileName.trim()) {
+      if (typeof req.coverImage !== 'object') {
+        throw APIError.invalidArgument("coverImage must be an object when provided");
+      }
+      
+      if (!req.coverImage.fileName || typeof req.coverImage.fileName !== 'string') {
         throw APIError.invalidArgument("coverImage.fileName is required when coverImage is provided");
       }
       
-      if (!req.coverImage.base64Data || typeof req.coverImage.base64Data !== 'string' || !req.coverImage.base64Data.trim()) {
+      if (!req.coverImage.fileName.trim()) {
+        throw APIError.invalidArgument("coverImage.fileName cannot be empty when coverImage is provided");
+      }
+      
+      if (!req.coverImage.base64Data || typeof req.coverImage.base64Data !== 'string') {
         throw APIError.invalidArgument("coverImage.base64Data is required when coverImage is provided");
+      }
+      
+      if (!req.coverImage.base64Data.trim()) {
+        throw APIError.invalidArgument("coverImage.base64Data cannot be empty when coverImage is provided");
       }
       
       if (!req.coverImage.contentType || typeof req.coverImage.contentType !== 'string') {
@@ -89,8 +125,41 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     }
 
     // Validate description if provided
-    if (req.description !== undefined && (typeof req.description !== 'string' && req.description !== null)) {
-      throw APIError.invalidArgument("description must be a string or null/undefined");
+    if (req.description !== undefined && req.description !== null && typeof req.description !== 'string') {
+      throw APIError.invalidArgument("description must be a string when provided");
+    }
+
+    // Validate base64 data format
+    try {
+      // Test if the base64 data is valid by attempting to create a buffer
+      let cleanBase64 = req.productFile.base64Data.trim();
+      if (cleanBase64.includes(',')) {
+        cleanBase64 = cleanBase64.split(',')[1];
+      }
+      
+      const testBuffer = Buffer.from(cleanBase64, "base64");
+      if (testBuffer.length === 0) {
+        throw APIError.invalidArgument("productFile.base64Data contains invalid or empty base64 data");
+      }
+    } catch (error) {
+      throw APIError.invalidArgument("productFile.base64Data is not valid base64 format");
+    }
+
+    // Validate cover image base64 if provided
+    if (req.coverImage && req.coverImage.base64Data) {
+      try {
+        let cleanBase64 = req.coverImage.base64Data.trim();
+        if (cleanBase64.includes(',')) {
+          cleanBase64 = cleanBase64.split(',')[1];
+        }
+        
+        const testBuffer = Buffer.from(cleanBase64, "base64");
+        if (testBuffer.length === 0) {
+          throw APIError.invalidArgument("coverImage.base64Data contains invalid or empty base64 data");
+        }
+      } catch (error) {
+        throw APIError.invalidArgument("coverImage.base64Data is not valid base64 format");
+      }
     }
 
     try {
@@ -142,7 +211,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
 
       // 3) Upload product file (multipart). Endpoint may differ; we try a generic route:
       try {
-        // Validate base64 data before processing
+        // Process base64 data
         let cleanBase64 = req.productFile.base64Data.trim();
         if (cleanBase64.includes(',')) {
           // Remove data URL prefix if present
@@ -150,9 +219,6 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         }
         
         const fileBuf = Buffer.from(cleanBase64, "base64");
-        if (fileBuf.length === 0) {
-          throw APIError.invalidArgument("productFile.base64Data contains invalid base64 data");
-        }
         
         await polarMultipartUpload(`/v1/products/${encodeURIComponent(productId)}/files`, {}, {
           fileName: req.productFile.fileName.trim(),
@@ -173,7 +239,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       // 4) Optional: upload cover image
       if (req.coverImage?.fileName && req.coverImage?.base64Data) {
         try {
-          // Validate base64 data before processing
+          // Process base64 data
           let cleanBase64 = req.coverImage.base64Data.trim();
           if (cleanBase64.includes(',')) {
             // Remove data URL prefix if present
@@ -181,19 +247,16 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
           }
           
           const imgBuf = Buffer.from(cleanBase64, "base64");
-          if (imgBuf.length === 0) {
-            console.warn("Invalid base64 data for cover image, skipping upload");
-          } else {
-            await polarMultipartUpload(
-              `/v1/products/${encodeURIComponent(productId)}/images`,
-              {},
-              {
-                fileName: req.coverImage.fileName.trim(),
-                contentType: req.coverImage.contentType || "image/jpeg",
-                data: imgBuf,
-              }
-            );
-          }
+          
+          await polarMultipartUpload(
+            `/v1/products/${encodeURIComponent(productId)}/images`,
+            {},
+            {
+              fileName: req.coverImage.fileName.trim(),
+              contentType: req.coverImage.contentType || "image/jpeg",
+              data: imgBuf,
+            }
+          );
         } catch (err) {
           console.error("Cover image upload error:", err);
           // Don't fail the entire creation if cover upload fails; present a partial success.
