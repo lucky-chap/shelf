@@ -16,14 +16,14 @@ export function isStripeConfigured(): boolean {
  * Throws a descriptive error if the key is missing or invalid.
  */
 export function getStripe(): Promise<Stripe | null> {
-  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
-  if (!key || !key.startsWith("pk_")) {
-    throw new Error(
-      "Missing or invalid VITE_STRIPE_PUBLISHABLE_KEY. Please set it in your .env file (must start with 'pk_')."
-    );
-  }
+  // const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+  // if (!key || !key.startsWith("pk_")) {
+  //   throw new Error(
+  //     "Missing or invalid VITE_STRIPE_PUBLISHABLE_KEY. Please set it in your .env file (must start with 'pk_')."
+  //   );
+  // }
   if (!stripePromise) {
-    stripePromise = loadStripe(key);
+    stripePromise = loadStripe("pk_test_51S2Y3iPUkb8apElmzxlSimxk46JIhVgilAsO9SjUMftq5CMI1sZJf6OPXfEue4GrBqChFHwr7xyEzRw9b1jJfSs100oqz5cbmS");
   }
   return stripePromise;
 }
