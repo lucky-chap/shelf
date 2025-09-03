@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "encore.dev": "^1.49.1",
-    "stripe": "^17.7.0"
+    "encore.dev": "^1.49.1"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

@@ -13,7 +13,6 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
-import Storefront from "../components/Storefront";
 import backend from "~backend/client";
 
 function LandingPageContent() {
@@ -235,11 +234,6 @@ function LandingPageContent() {
               <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>
                 <LinksList />
               </div>
-            </ErrorBoundary>
-
-            {/* Storefront */}
-            <ErrorBoundary>
-              <Storefront />
             </ErrorBoundary>
 
             <ErrorBoundary>
