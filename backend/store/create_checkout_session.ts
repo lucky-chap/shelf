@@ -57,6 +57,13 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
         }
       }
 
+      // For paid products in USD, Stripe requires a minimum of $0.50 (50 cents).
+      if (product.priceCents > 0 && product.priceCents < 50) {
+        throw APIError.failedPrecondition(
+          "Minimum price is $0.50 USD. Set product price to 0 for free or at least 50 cents."
+        );
+      }
+
       // For paid products, check if Stripe is configured
       const sk = STRIPE_SECRET_KEY();
       if (!sk) {

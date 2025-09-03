@@ -11,6 +11,11 @@ export const createProduct = api<CreateProductRequest, Product>(
     if (!req.fileObjectName) throw APIError.invalidArgument("fileObjectName is required");
     const priceCents = Math.max(0, Math.floor(req.priceCents ?? 0));
 
+    // Enforce Stripe minimum for USD: either free (0) or at least 50 cents.
+    if (priceCents > 0 && priceCents < 50) {
+      throw APIError.invalidArgument("Minimum price is $0.50 USD. Set priceCents to 0 for free or at least 50.");
+    }
+
     // Validate object existence
     try {
       await productFiles.attrs(req.fileObjectName);

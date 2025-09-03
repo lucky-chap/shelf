@@ -55,6 +55,11 @@ export const updateProduct = api<UpdateProductRequest, Product>(
 
     const newPrice = req.priceCents !== undefined ? Math.max(0, Math.floor(req.priceCents)) : existing.priceCents;
 
+    // Enforce Stripe minimum for USD: either free (0) or at least 50 cents.
+    if (newPrice > 0 && newPrice < 50) {
+      throw APIError.invalidArgument("Minimum price is $0.50 USD. Set priceCents to 0 for free or at least 50.");
+    }
+
     // Generate a fresh download URL if file changed or on every update for safety
     const downloadSigned = await productFiles.signedDownloadUrl(fileKey, { ttl: 24 * 3600 });
 
