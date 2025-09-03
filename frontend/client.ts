@@ -291,6 +291,7 @@ export namespace auth {
  * Import the endpoint handlers to derive the types for the client.
  */
 import { get as api_config_get_get } from "~backend/config/get";
+import { searchUnsplash as api_config_search_unsplash_searchUnsplash } from "~backend/config/search_unsplash";
 import { update as api_config_update_update } from "~backend/config/update";
 import { verifyDomain as api_config_verify_domain_verifyDomain } from "~backend/config/verify_domain";
 
@@ -302,6 +303,7 @@ export namespace config {
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
             this.get = this.get.bind(this)
+            this.searchUnsplash = this.searchUnsplash.bind(this)
             this.update = this.update.bind(this)
             this.verifyDomain = this.verifyDomain.bind(this)
         }
@@ -313,6 +315,21 @@ export namespace config {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/config`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_get_get>
+        }
+
+        /**
+         * Searches Unsplash for background images.
+         */
+        public async searchUnsplash(params: RequestType<typeof api_config_search_unsplash_searchUnsplash>): Promise<ResponseType<typeof api_config_search_unsplash_searchUnsplash>> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                page:  params.page === undefined ? undefined : String(params.page),
+                query: params.query,
+            })
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/config/unsplash/search`, {query, method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_search_unsplash_searchUnsplash>
         }
 
         /**

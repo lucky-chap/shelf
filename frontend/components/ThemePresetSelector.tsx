@@ -10,6 +10,8 @@ export interface ThemePreset {
   themeColor: string;
   backgroundColor: string;
   textColor: string;
+  buttonStyle?: "rounded" | "square" | "pill";
+  fontFamily?: "sans" | "serif" | "mono";
 }
 
 export const themePresets: ThemePreset[] = [
@@ -20,6 +22,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#3B82F6",
     backgroundColor: "#FFFFFF",
     textColor: "#000000",
+    buttonStyle: "rounded",
+    fontFamily: "sans",
   },
   {
     id: "dark",
@@ -28,6 +32,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#60A5FA",
     backgroundColor: "#0F172A",
     textColor: "#F1F5F9",
+    buttonStyle: "rounded",
+    fontFamily: "sans",
   },
   {
     id: "minimal",
@@ -36,6 +42,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#6B7280",
     backgroundColor: "#F9FAFB",
     textColor: "#374151",
+    buttonStyle: "square",
+    fontFamily: "sans",
   },
   {
     id: "colorful",
@@ -44,6 +52,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#EC4899",
     backgroundColor: "#FDF2F8",
     textColor: "#831843",
+    buttonStyle: "pill",
+    fontFamily: "sans",
   },
   {
     id: "ocean",
@@ -52,6 +62,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#0EA5E9",
     backgroundColor: "#F0F9FF",
     textColor: "#0C4A6E",
+    buttonStyle: "rounded",
+    fontFamily: "sans",
   },
   {
     id: "forest",
@@ -60,6 +72,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#10B981",
     backgroundColor: "#F0FDF4",
     textColor: "#064E3B",
+    buttonStyle: "rounded",
+    fontFamily: "sans",
   },
   {
     id: "sunset",
@@ -68,6 +82,8 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#F97316",
     backgroundColor: "#FFF7ED",
     textColor: "#9A3412",
+    buttonStyle: "pill",
+    fontFamily: "sans",
   },
   {
     id: "lavender",
@@ -76,6 +92,68 @@ export const themePresets: ThemePreset[] = [
     themeColor: "#8B5CF6",
     backgroundColor: "#FAF5FF",
     textColor: "#581C87",
+    buttonStyle: "rounded",
+    fontFamily: "sans",
+  },
+  {
+    id: "retro",
+    name: "Retro",
+    description: "Vintage vibes",
+    themeColor: "#DC2626",
+    backgroundColor: "#FEF2F2",
+    textColor: "#7F1D1D",
+    buttonStyle: "square",
+    fontFamily: "serif",
+  },
+  {
+    id: "neon",
+    name: "Neon",
+    description: "Electric and bold",
+    themeColor: "#10B981",
+    backgroundColor: "#000000",
+    textColor: "#00FF88",
+    buttonStyle: "pill",
+    fontFamily: "mono",
+  },
+  {
+    id: "earthy",
+    name: "Earthy",
+    description: "Natural brown tones",
+    themeColor: "#A3A3A3",
+    backgroundColor: "#F5F5DC",
+    textColor: "#8B4513",
+    buttonStyle: "rounded",
+    fontFamily: "serif",
+  },
+  {
+    id: "corporate",
+    name: "Corporate",
+    description: "Professional blue",
+    themeColor: "#1E40AF",
+    backgroundColor: "#FFFFFF",
+    textColor: "#1F2937",
+    buttonStyle: "square",
+    fontFamily: "sans",
+  },
+  {
+    id: "pastel",
+    name: "Pastel",
+    description: "Soft and dreamy",
+    themeColor: "#F472B6",
+    backgroundColor: "#FEF7FF",
+    textColor: "#7C2D92",
+    buttonStyle: "pill",
+    fontFamily: "sans",
+  },
+  {
+    id: "monochrome",
+    name: "Monochrome",
+    description: "Black and white",
+    themeColor: "#000000",
+    backgroundColor: "#FFFFFF",
+    textColor: "#000000",
+    buttonStyle: "square",
+    fontFamily: "mono",
   },
 ];
 
@@ -85,12 +163,14 @@ interface ThemePresetSelectorProps {
     backgroundColor: string;
     textColor: string;
   };
+  selectedTheme?: string | null;
   onThemeSelect: (theme: ThemePreset) => void;
 }
 
-export default function ThemePresetSelector({ currentTheme, onThemeSelect }: ThemePresetSelectorProps) {
+export default function ThemePresetSelector({ currentTheme, selectedTheme, onThemeSelect }: ThemePresetSelectorProps) {
   const isCurrentTheme = (preset: ThemePreset) => {
-    return (
+    return selectedTheme === preset.id || (
+      !selectedTheme &&
       preset.themeColor === currentTheme.themeColor &&
       preset.backgroundColor === currentTheme.backgroundColor &&
       preset.textColor === currentTheme.textColor
@@ -109,7 +189,7 @@ export default function ThemePresetSelector({ currentTheme, onThemeSelect }: The
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {themePresets.map((preset) => (
             <Button
               key={preset.id}

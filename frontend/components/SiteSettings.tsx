@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Save, Globe } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Settings, Save, Globe, Palette, Image } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import ThemePresetSelector, { ThemePreset } from "./ThemePresetSelector";
+import ThemePresetSelector, { ThemePreset, themePresets } from "./ThemePresetSelector";
+import UnsplashImageSearch from "./UnsplashImageSearch";
 import DomainConfiguration from "./DomainConfiguration";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
@@ -24,7 +26,10 @@ function SiteSettingsContent() {
     backgroundColor: "#FFFFFF",
     textColor: "#000000",
     avatarUrl: "",
-    customDomain: ""
+    customDomain: "",
+    backgroundType: "solid" as "solid" | "unsplash" | "upload",
+    backgroundImageUrl: "",
+    selectedTheme: null as string | null
   });
 
   const { toast } = useToast();
@@ -74,7 +79,10 @@ function SiteSettingsContent() {
         backgroundColor: configQuery.data.backgroundColor,
         textColor: configQuery.data.textColor,
         avatarUrl: configQuery.data.avatarUrl || "",
-        customDomain: configQuery.data.customDomain || ""
+        customDomain: configQuery.data.customDomain || "",
+        backgroundType: (configQuery.data.backgroundType as "solid" | "unsplash" | "upload") || "solid",
+        backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
+        selectedTheme: configQuery.data.selectedTheme
       });
     }
   }, [configQuery.data]);
@@ -113,6 +121,7 @@ function SiteSettingsContent() {
       themeColor: preset.themeColor,
       backgroundColor: preset.backgroundColor,
       textColor: preset.textColor,
+      selectedTheme: preset.id,
     });
   };
 
@@ -126,6 +135,21 @@ function SiteSettingsContent() {
     updateConfigMutation.mutate({
       ...formData,
       customDomain: domain || ""
+    });
+  };
+
+  const handleBackgroundTypeChange = (type: "solid" | "unsplash" | "upload") => {
+    setFormData({
+      ...formData,
+      backgroundType: type,
+      backgroundImageUrl: type === "solid" ? "" : formData.backgroundImageUrl
+    });
+  };
+
+  const handleUnsplashImageSelect = (imageUrl: string) => {
+    setFormData({
+      ...formData,
+      backgroundImageUrl: imageUrl
     });
   };
 
@@ -178,10 +202,14 @@ function SiteSettingsContent() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             General
+          </TabsTrigger>
+          <TabsTrigger value="theme" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Theme
           </TabsTrigger>
           <TabsTrigger value="domain" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
@@ -191,15 +219,6 @@ function SiteSettingsContent() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
-          <ThemePresetSelector
-            currentTheme={{
-              themeColor: formData.themeColor,
-              backgroundColor: formData.backgroundColor,
-              textColor: formData.textColor,
-            }}
-            onThemeSelect={handleThemeSelect}
-          />
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -207,7 +226,7 @@ function SiteSettingsContent() {
                 Site Settings
               </CardTitle>
               <CardDescription>
-                Configure your landing page appearance and content
+                Configure your landing page content and basic appearance
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -264,65 +283,6 @@ function SiteSettingsContent() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <Label>Custom Colors</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="themeColor">Theme Color</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="themeColor"
-                          type="color"
-                          value={formData.themeColor}
-                          onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={formData.themeColor}
-                          onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
-                          placeholder="#3B82F6"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="backgroundColor">Background Color</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="backgroundColor"
-                          type="color"
-                          value={formData.backgroundColor}
-                          onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={formData.backgroundColor}
-                          onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
-                          placeholder="#FFFFFF"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="textColor">Text Color</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="textColor"
-                          type="color"
-                          value={formData.textColor}
-                          onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={formData.textColor}
-                          onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
-                          placeholder="#000000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 <Button 
                   type="submit" 
                   className="w-full flex items-center gap-2"
@@ -338,6 +298,152 @@ function SiteSettingsContent() {
                   )}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="theme" className="space-y-6">
+          <ThemePresetSelector
+            currentTheme={{
+              themeColor: formData.themeColor,
+              backgroundColor: formData.backgroundColor,
+              textColor: formData.textColor,
+            }}
+            selectedTheme={formData.selectedTheme}
+            onThemeSelect={handleThemeSelect}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5" />
+                Background Settings
+              </CardTitle>
+              <CardDescription>
+                Choose how your landing page background should look
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <Label>Background Source</Label>
+                <RadioGroup
+                  value={formData.backgroundType}
+                  onValueChange={(value) => handleBackgroundTypeChange(value as "solid" | "unsplash" | "upload")}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="solid" id="solid" />
+                    <Label htmlFor="solid">Solid Color</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="unsplash" id="unsplash" />
+                    <Label htmlFor="unsplash">Unsplash Image</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="upload" id="upload" />
+                    <Label htmlFor="upload">Custom Upload (Coming Soon)</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {formData.backgroundType === "unsplash" && (
+                <UnsplashImageSearch
+                  selectedImageUrl={formData.backgroundImageUrl}
+                  onImageSelect={handleUnsplashImageSelect}
+                />
+              )}
+
+              {formData.backgroundType === "upload" && (
+                <Card className="border-dashed">
+                  <CardContent className="text-center py-12">
+                    <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Custom image upload coming soon</p>
+                    <p className="text-sm text-muted-foreground">
+                      For now, you can use Unsplash images or enter a direct image URL
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Custom Colors</CardTitle>
+              <CardDescription>
+                Fine-tune your theme colors or override preset selections
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="themeColor">Theme Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="themeColor"
+                      type="color"
+                      value={formData.themeColor}
+                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: null })}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={formData.themeColor}
+                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: null })}
+                      placeholder="#3B82F6"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="backgroundColor">Background Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="backgroundColor"
+                      type="color"
+                      value={formData.backgroundColor}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: null })}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={formData.backgroundColor}
+                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: null })}
+                      placeholder="#FFFFFF"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="textColor">Text Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="textColor"
+                      type="color"
+                      value={formData.textColor}
+                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: null })}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={formData.textColor}
+                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: null })}
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleSubmit}
+                className="w-full mt-6 flex items-center gap-2"
+                disabled={updateConfigMutation.isPending}
+              >
+                {updateConfigMutation.isPending ? (
+                  <LoadingSpinner size="sm" text="Saving..." />
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Theme Settings
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -359,34 +465,50 @@ function SiteSettingsContent() {
             </CardHeader>
             <CardContent>
               <div 
-                className="p-6 rounded-lg border"
+                className="p-6 rounded-lg border relative overflow-hidden"
                 style={{ 
-                  backgroundColor: formData.backgroundColor,
-                  color: formData.textColor
+                  backgroundColor: formData.backgroundType === "solid" ? formData.backgroundColor : "#FFFFFF",
+                  color: formData.textColor,
+                  backgroundImage: formData.backgroundType === "unsplash" && formData.backgroundImageUrl 
+                    ? `url(${formData.backgroundImageUrl})` 
+                    : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat"
                 }}
               >
-                <div className="text-center space-y-4">
-                  <Avatar className="h-16 w-16 mx-auto">
-                    <AvatarImage src={formData.avatarUrl || undefined} />
-                    <AvatarFallback className="text-lg">
-                      {formData.title.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h2 
-                      className="text-xl font-bold"
-                      style={{ color: formData.themeColor }}
-                    >
-                      {formData.title || "Site Title"}
-                    </h2>
-                    <p className="text-sm opacity-75 mt-1">
-                      {formData.description || "Site description"}
-                    </p>
-                    {formData.customDomain && (
-                      <p className="text-xs opacity-60 mt-2">
-                        Available at: {formData.customDomain}
+                {formData.backgroundType === "unsplash" && formData.backgroundImageUrl && (
+                  <div className="absolute inset-0 bg-black/20" />
+                )}
+                <div className="relative z-10">
+                  <div className="text-center space-y-4">
+                    <Avatar className="h-16 w-16 mx-auto">
+                      <AvatarImage src={formData.avatarUrl || undefined} />
+                      <AvatarFallback className="text-lg">
+                        {formData.title.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h2 
+                        className="text-xl font-bold"
+                        style={{ color: formData.themeColor }}
+                      >
+                        {formData.title || "Site Title"}
+                      </h2>
+                      <p className="text-sm opacity-75 mt-1">
+                        {formData.description || "Site description"}
                       </p>
-                    )}
+                      {formData.customDomain && (
+                        <p className="text-xs opacity-60 mt-2">
+                          Available at: {formData.customDomain}
+                        </p>
+                      )}
+                      {formData.selectedTheme && (
+                        <p className="text-xs opacity-60 mt-1">
+                          Theme: {themePresets.find(t => t.id === formData.selectedTheme)?.name}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

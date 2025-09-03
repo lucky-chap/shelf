@@ -13,6 +13,7 @@ import ProductsList from "../components/ProductsList";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
+import { themePresets } from "../components/ThemePresetSelector";
 import backend from "~backend/client";
 
 function LandingPageContent() {
@@ -67,7 +68,72 @@ function LandingPageContent() {
     themeColor: "#3B82F6",
     backgroundColor: "#FFFFFF",
     textColor: "#000000",
-    avatarUrl: null
+    avatarUrl: null,
+    backgroundType: "solid",
+    backgroundImageUrl: null,
+    selectedTheme: null
+  };
+
+  // Apply theme preset styles if a theme is selected
+  const selectedThemePreset = config.selectedTheme 
+    ? themePresets.find(t => t.id === config.selectedTheme)
+    : null;
+
+  // Determine background styles
+  const getBackgroundStyles = () => {
+    const baseStyles: React.CSSProperties = {
+      color: config.textColor,
+      minHeight: "100vh"
+    };
+
+    if (config.backgroundType === "unsplash" && config.backgroundImageUrl) {
+      return {
+        ...baseStyles,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url(${config.backgroundImageUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed"
+      };
+    } else {
+      return {
+        ...baseStyles,
+        backgroundColor: config.backgroundColor
+      };
+    }
+  };
+
+  // Apply theme-specific classes
+  const getThemeClasses = () => {
+    if (!selectedThemePreset) return "";
+    
+    let classes = "";
+    
+    // Font family
+    if (selectedThemePreset.fontFamily === "serif") {
+      classes += " font-serif";
+    } else if (selectedThemePreset.fontFamily === "mono") {
+      classes += " font-mono";
+    } else {
+      classes += " font-sans";
+    }
+    
+    return classes;
+  };
+
+  // Button styles based on theme
+  const getButtonStyles = () => {
+    if (!selectedThemePreset) return {};
+    
+    const styles: React.CSSProperties = {};
+    
+    if (selectedThemePreset.buttonStyle === "pill") {
+      styles.borderRadius = "9999px";
+    } else if (selectedThemePreset.buttonStyle === "square") {
+      styles.borderRadius = "4px";
+    }
+    
+    return styles;
   };
 
   const currentUrl = window.location.href;
@@ -119,18 +185,20 @@ function LandingPageContent() {
       </Helmet>
 
       <div 
-        className="min-h-screen"
-        style={{ 
-          backgroundColor: config.backgroundColor,
-          color: config.textColor
-        }}
+        className={`${getThemeClasses()}`}
+        style={getBackgroundStyles()}
       >
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="space-y-8">
             {/* Header with Admin Access */}
             <div className="flex justify-end mb-4">
               <Link to="/admin">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
+                  style={getButtonStyles()}
+                >
                   <Settings className="h-4 w-4" />
                   Admin
                 </Button>
@@ -138,10 +206,10 @@ function LandingPageContent() {
             </div>
 
             {/* Profile Section */}
-            <Card>
+            <Card className={config.backgroundType === "unsplash" ? "backdrop-blur-sm bg-white/90" : ""}>
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <Avatar className="h-24 w-24">
+                  <Avatar className="h-24 w-24 ring-2 ring-offset-2" style={{ ringColor: config.themeColor }}>
                     <AvatarImage src={config.avatarUrl || undefined} />
                     <AvatarFallback className="text-lg">
                       {config.title.charAt(0).toUpperCase()}
@@ -153,17 +221,26 @@ function LandingPageContent() {
                       {config.title}
                     </h1>
                     <p className="text-muted-foreground mt-2">{config.description}</p>
+                    {selectedThemePreset && (
+                      <p className="text-xs text-muted-foreground mt-1 opacity-60">
+                        {selectedThemePreset.name} Theme
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <ErrorBoundary>
-              <ProductsList />
+              <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>
+                <ProductsList />
+              </div>
             </ErrorBoundary>
 
             <ErrorBoundary>
-              <LinksList />
+              <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>
+                <LinksList />
+              </div>
             </ErrorBoundary>
             
             <ErrorBoundary>
@@ -177,6 +254,15 @@ function LandingPageContent() {
                 url={currentUrl}
               />
             </ErrorBoundary>
+
+            {/* Background attribution for Unsplash */}
+            {config.backgroundType === "unsplash" && config.backgroundImageUrl && (
+              <div className="text-center">
+                <p className="text-xs text-white/60 backdrop-blur-sm bg-black/20 rounded px-2 py-1 inline-block">
+                  Background image from Unsplash
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

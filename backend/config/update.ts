@@ -9,6 +9,9 @@ export interface UpdateSiteConfigRequest {
   textColor: string;
   avatarUrl?: string;
   customDomain?: string;
+  backgroundType?: "solid" | "unsplash" | "upload";
+  backgroundImageUrl?: string;
+  selectedTheme?: string;
 }
 
 export interface SiteConfig {
@@ -19,6 +22,9 @@ export interface SiteConfig {
   textColor: string;
   avatarUrl: string | null;
   customDomain: string | null;
+  backgroundType: string;
+  backgroundImageUrl: string | null;
+  selectedTheme: string | null;
 }
 
 // Updates the site configuration.
@@ -26,8 +32,15 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
   { expose: true, method: "PUT", path: "/config" },
   async (req) => {
     const config = await configDB.queryRow<SiteConfig>`
-      INSERT INTO site_config (id, site_title, site_description, theme_color, background_color, text_color, owner_avatar_url, custom_domain)
-      VALUES (1, ${req.title}, ${req.description}, ${req.themeColor}, ${req.backgroundColor}, ${req.textColor}, ${req.avatarUrl || null}, ${req.customDomain || null})
+      INSERT INTO site_config (
+        id, site_title, site_description, theme_color, background_color, text_color, 
+        owner_avatar_url, custom_domain, background_type, background_image_url, selected_theme
+      )
+      VALUES (
+        1, ${req.title}, ${req.description}, ${req.themeColor}, ${req.backgroundColor}, ${req.textColor}, 
+        ${req.avatarUrl || null}, ${req.customDomain || null}, ${req.backgroundType || "solid"}, 
+        ${req.backgroundImageUrl || null}, ${req.selectedTheme || null}
+      )
       ON CONFLICT (id) DO UPDATE SET
         site_title = EXCLUDED.site_title,
         site_description = EXCLUDED.site_description,
@@ -36,6 +49,9 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
         text_color = EXCLUDED.text_color,
         owner_avatar_url = EXCLUDED.owner_avatar_url,
         custom_domain = EXCLUDED.custom_domain,
+        background_type = EXCLUDED.background_type,
+        background_image_url = EXCLUDED.background_image_url,
+        selected_theme = EXCLUDED.selected_theme,
         updated_at = NOW()
       RETURNING 
         site_title as title,
@@ -44,7 +60,10 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
         background_color as "backgroundColor", 
         text_color as "textColor", 
         owner_avatar_url as "avatarUrl",
-        custom_domain as "customDomain"
+        custom_domain as "customDomain",
+        background_type as "backgroundType",
+        background_image_url as "backgroundImageUrl",
+        selected_theme as "selectedTheme"
     `;
 
     if (!config) {
