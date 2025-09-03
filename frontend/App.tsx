@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import LandingPage from "./pages/LandingPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CheckoutResult from "./pages/CheckoutResult";
+import { STRIPE_PUBLISHABLE_KEY } from "./config";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +21,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Ensure the Stripe key is evaluated at startup (do not remove this usage).
+// config.ts will throw if the key is missing/invalid, preventing the app from running.
+const __ensureStripeKeyLoaded = STRIPE_PUBLISHABLE_KEY;
 
 export default function App() {
   return (

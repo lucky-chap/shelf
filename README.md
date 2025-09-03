@@ -55,15 +55,15 @@ The analytics view includes:
 
 Users can configure custom domains for their landing pages:
 
-1. **Domain Configuration**: Enter your domain in the admin settings
-2. **DNS Verification**: System checks for proper DNS configuration
-3. **Setup Instructions**: Step-by-step guides for popular domain providers
-4. **SSL Certificates**: Automatically provisioned for verified domains
+1. Domain Configuration: Enter your domain in the admin settings
+2. DNS Verification: System checks for proper DNS configuration
+3. Setup Instructions: Step-by-step guides for popular domain providers
+4. SSL Certificates: Automatically provisioned for verified domains
 
 ### DNS Records Required
 
-- **CNAME Record**: Points your domain to the hosting platform
-- **TXT Record**: Verifies domain ownership
+- CNAME Record: Points your domain to the hosting platform
+- TXT Record: Verifies domain ownership
 
 The system provides real-time verification and detailed setup instructions for popular domain providers including GoDaddy, Namecheap, and Cloudflare.
 
@@ -81,7 +81,7 @@ This project uses Stripe with proper key separation. Never hardcode any keys.
 Required keys:
 - STRIPE_SECRET_KEY (backend secret key, used by server)
 - STRIPE_WEBHOOK_SECRET (backend secret, used for verifying Stripe webhook events)
-- STRIPE_PUBLISHABLE_KEY (frontend publishable key, used by Stripe.js in the browser)
+- VITE_STRIPE_PUBLISHABLE_KEY (frontend publishable key, used by Stripe.js in the browser)
 
 Configure as follows:
 
@@ -89,11 +89,12 @@ Configure as follows:
   - STRIPE_SECRET_KEY = sk_test_123...
   - STRIPE_WEBHOOK_SECRET = whsec_123...
 
-- Frontend config (edit frontend/config.ts):
-  - STRIPE_PUBLISHABLE_KEY = "pk_test_123..."
+- Frontend config (Vite environment variable):
+  - VITE_STRIPE_PUBLISHABLE_KEY = pk_test_123...
 
 Important:
 - Never put secret keys in the frontend.
 - The backend validates that the secret key exists and starts with "sk_".
 - The backend validates the webhook secret looks correct (starts with "whsec_").
-- The frontend loader validates that the publishable key exists and starts with "pk_".
+- The frontend enforces that VITE_STRIPE_PUBLISHABLE_KEY exists and starts with "pk_".
+- The app will not run without a valid VITE_STRIPE_PUBLISHABLE_KEY.
