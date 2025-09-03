@@ -6,7 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import LandingPage from "./pages/LandingPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CheckoutResult from "./pages/CheckoutResult";
-import { STRIPE_PUBLISHABLE_KEY, UNSPLASH_ACCESS_KEY } from "./config";
+import { isStripeConfigured, isUnsplashConfigured } from "./config";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,13 +22,17 @@ const queryClient = new QueryClient({
   },
 });
 
-// Ensure the Stripe key is evaluated at startup (do not remove this usage).
-// config.ts will throw if the key is missing/invalid, preventing the app from running.
-const __ensureStripeKeyLoaded = STRIPE_PUBLISHABLE_KEY;
+// Log configuration status
+if (isStripeConfigured()) {
+  console.log("Stripe integration enabled");
+} else {
+  console.log("Stripe integration disabled - set VITE_STRIPE_PUBLISHABLE_KEY to enable store functionality");
+}
 
-// Optionally validate Unsplash key if provided
-if (UNSPLASH_ACCESS_KEY) {
+if (isUnsplashConfigured()) {
   console.log("Unsplash integration enabled");
+} else {
+  console.log("Unsplash integration disabled - set VITE_UNSPLASH_ACCESS_KEY to enable background images");
 }
 
 export default function App() {

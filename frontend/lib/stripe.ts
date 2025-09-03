@@ -7,7 +7,9 @@ let stripePromise: Promise<Stripe | null> | null = null;
  * Returns true if a publishable key is configured and looks valid.
  */
 export function isStripeConfigured(): boolean {
-  return typeof STRIPE_PUBLISHABLE_KEY === "string" && /^pk_/.test(STRIPE_PUBLISHABLE_KEY);
+  return typeof STRIPE_PUBLISHABLE_KEY === "string" && 
+         STRIPE_PUBLISHABLE_KEY.trim().length > 0 && 
+         STRIPE_PUBLISHABLE_KEY.startsWith('pk_');
 }
 
 /**
@@ -16,7 +18,7 @@ export function isStripeConfigured(): boolean {
  */
 export function getStripe(): Promise<Stripe | null> {
   if (!isStripeConfigured()) {
-    throw new Error("Stripe publishable key is missing or invalid. Set it in frontend/config.ts with a value starting with 'pk_'.");
+    throw new Error("Stripe publishable key is missing or invalid. Set VITE_STRIPE_PUBLISHABLE_KEY in your environment with a value starting with 'pk_'.");
   }
   if (!stripePromise) {
     stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);

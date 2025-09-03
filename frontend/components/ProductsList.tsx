@@ -3,7 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Download, ImageOff } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShoppingCart, Download, ImageOff, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import DownloadDialog from "./dialogs/DownloadDialog";
 import LoadingSpinner from "./LoadingSpinner";
@@ -87,7 +88,7 @@ export default function ProductsList() {
             window.location.assign(sessionUrl);
             return;
           }
-          throw new Error("Stripe publishable key is missing or invalid. Set it in frontend/config.ts as a 'pk_' key.");
+          throw new Error("Stripe publishable key is missing or invalid. Set VITE_STRIPE_PUBLISHABLE_KEY as a 'pk_' key.");
         }
         
         const stripe = await getStripe();
@@ -103,7 +104,7 @@ export default function ProductsList() {
         console.error("Stripe redirect error:", error);
         toast({
           title: "Stripe Not Configured",
-          description: error?.message || "Publishable key missing or invalid. Set it in frontend/config.ts.",
+          description: error?.message || "Publishable key missing or invalid. Contact the site owner.",
           variant: "destructive",
         });
       }
@@ -135,6 +136,7 @@ export default function ProductsList() {
 
   const products = productsQuery.data?.products ?? [];
   const hasProducts = products.length > 0;
+  const hasPaidProducts = products.some(p => p.priceCents > 0);
 
   if (productsQuery.isLoading) {
     return (
@@ -192,7 +194,17 @@ export default function ProductsList() {
           </CardTitle>
           <CardDescription>Digital downloads and resources</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {hasPaidProducts && !isStripeConfigured() && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>Payment System Not Configured</AlertTitle>
+              <AlertDescription>
+                Some products require payment but Stripe is not configured. Free products are still available for download.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {products.map((p) => (
               <div key={p.id} className="border rounded-lg overflow-hidden flex">
@@ -223,7 +235,7 @@ export default function ProductsList() {
                     <Button
                       size="sm"
                       onClick={() => checkoutMutation.mutate(p)}
-                      disabled={checkoutMutation.isPending}
+                      disabled={checkoutMutation.isPending || (p.priceCents > 0 && !isStripeConfigured())}
                       className="flex items-center gap-2"
                     >
                       {checkoutMutation.isPending ? (
