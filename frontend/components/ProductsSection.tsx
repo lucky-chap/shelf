@@ -9,7 +9,22 @@ import ErrorBoundary from "./ErrorBoundary";
 import backend from "~backend/client";
 
 function ProductsSectionContent() {
-  const stripeConfigured = isStripeConfigured();
+  const frontendConfigured = isStripeConfigured();
+
+  const stripeStatusQuery = useQuery({
+    queryKey: ["stripe", "status"],
+    queryFn: async () => {
+      try {
+        return await backend.stripe.status();
+      } catch {
+        return { backendConfigured: false };
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  const backendConfigured = stripeStatusQuery.data?.backendConfigured ?? false;
+  const storeEnabled = frontendConfigured && backendConfigured;
 
   const productsQuery = useQuery({
     queryKey: ["products"],
@@ -107,7 +122,7 @@ function ProductsSectionContent() {
                         Download
                       </Button>
                     </ProductPurchaseDialog>
-                  ) : stripeConfigured ? (
+                  ) : storeEnabled ? (
                     <ProductPurchaseDialog product={product} isFree={false}>
                       <Button size="sm" className="flex items-center gap-2">
                         <ShoppingBag className="h-4 w-4" />

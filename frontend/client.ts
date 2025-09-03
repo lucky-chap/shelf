@@ -673,6 +673,7 @@ export namespace site {
  */
 import { createCheckoutSession as api_stripe_create_checkout_session_createCheckoutSession } from "~backend/stripe/create_checkout_session";
 import { getCheckoutSession as api_stripe_get_checkout_session_getCheckoutSession } from "~backend/stripe/get_checkout_session";
+import { status as api_stripe_status_status } from "~backend/stripe/status";
 
 export namespace stripe {
 
@@ -683,6 +684,7 @@ export namespace stripe {
             this.baseClient = baseClient
             this.createCheckoutSession = this.createCheckoutSession.bind(this)
             this.getCheckoutSession = this.getCheckoutSession.bind(this)
+            this.status = this.status.bind(this)
         }
 
         /**
@@ -701,6 +703,16 @@ export namespace stripe {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/stripe/checkout-session/${encodeURIComponent(params.sessionId)}`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_stripe_get_checkout_session_getCheckoutSession>
+        }
+
+        /**
+         * Returns backend Stripe configuration status.
+         * This is used by the frontend admin panel to show whether the Digital Store is enabled.
+         */
+        public async status(): Promise<ResponseType<typeof api_stripe_status_status>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/stripe/status`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_stripe_status_status>
         }
     }
 }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ShoppingBag, Edit, Trash2, Upload, Image } from "lucide-react";
+import { Plus, ShoppingBag, Edit, Trash2, Upload, Image, CreditCard, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -20,7 +20,7 @@ import {
 import { CardLoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
-import { isStripeConfigured } from "../config";
+import { isStripeConfigured as isStripeConfiguredFrontend } from "../config";
 import backend from "~backend/client";
 
 interface Product {
@@ -52,7 +52,22 @@ function ProductsManagementContent() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const stripeConfigured = isStripeConfigured();
+  const frontendStripeConfigured = isStripeConfiguredFrontend();
+
+  const stripeStatusQuery = useQuery({
+    queryKey: ["stripe", "status"],
+    queryFn: async () => {
+      try {
+        return await backend.stripe.status();
+      } catch {
+        return { backendConfigured: false, secretKeyPresent: false, webhookSecretPresent: false, message: "Unavailable" };
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  const backendStripeConfigured = stripeStatusQuery.data?.backendConfigured ?? false;
+  const stripeConfigured = frontendStripeConfigured && backendStripeConfigured;
 
   const productsQuery = useQuery({
     queryKey: ["admin-products"],
@@ -169,7 +184,6 @@ function ProductsManagementContent() {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
         const base64Data = result.split(',')[1];
         resolve(base64Data);
       };
@@ -236,6 +250,15 @@ function ProductsManagementContent() {
       return;
     }
 
+    if (formData.priceCents > 0 && !stripeConfigured) {
+      toast({
+        title: "Stripe Not Configured",
+        description: "Paid products require Stripe configuration. Set your env vars in .env and restart.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUploading(true);
     
     try {
@@ -258,9 +281,9 @@ function ProductsManagementContent() {
       };
 
       if (editingProduct) {
-        updateProductMutation.mutate({ ...productData, id: editingProduct.id });
+        await updateProductMutation.mutateAsync({ ...productData, id: editingProduct.id });
       } else {
-        createProductMutation.mutate(productData);
+        await createProductMutation.mutateAsync(productData);
       }
     } catch (error: any) {
       console.error("Failed to upload files:", error);
@@ -435,16 +458,45 @@ function ProductsManagementContent() {
 
   return (
     <div className="space-y-6">
-      {!stripeConfigured && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="pt-6">
-            <p className="text-amber-800 text-sm">
-              <strong>Note:</strong> Stripe configuration is required for paid products. 
-              Free products (price = $0) will work without Stripe.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Store Settings - Stripe Status */}
+      <Card className={stripeConfigured ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Store Settings
+          </CardTitle>
+          <CardDescription>
+            {stripeConfigured ? "Stripe is active" : "Stripe configuration required to enable paid checkout"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {stripeConfigured ? (
+            <div className="flex items-center gap-2 text-green-800">
+              <CheckCircle className="h-4 w-4" />
+              <span>Stripe: Configured ✅ — Digital Store is enabled.</span>
+            </div>
+          ) : (
+            <>
+              <div className="text-amber-800">
+                <p className="font-medium">The Digital Store requires Stripe configuration to process payments</p>
+                <p className="font-medium">Stripe Configuration Missing</p>
+                <p>To enable the Digital Store feature, add these environment variables to your <code>.env</code> file:</p>
+                <ul className="mt-1 ml-4 list-disc text-sm">
+                  <li><code>VITE_STRIPE_PUBLISHABLE_KEY</code> (frontend)</li>
+                  <li><code>STRIPE_SECRET_KEY</code> (backend)</li>
+                </ul>
+              </div>
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">Current Status:</p>
+                <Badge variant="secondary">Stripe: Not Configured</Badge>
+              </div>
+              <p className="text-sm text-amber-700">
+                Note: The app will continue to work, but the Digital Store will be disabled until Stripe is configured.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -4,13 +4,31 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, CreditCard, ExternalLink } from "lucide-react";
 import { isStripeConfigured } from "../config";
+import { useQuery } from "@tanstack/react-query";
+import backend from "~backend/client";
 
 interface Props {
   children: React.ReactNode;
 }
 
 export default function ConfigGuard({ children }: Props) {
-  const stripeConfigured = isStripeConfigured();
+  const frontendConfigured = isStripeConfigured();
+
+  const backendStatusQuery = useQuery({
+    queryKey: ["stripe", "status"],
+    queryFn: async () => {
+      try {
+        return await backend.stripe.status();
+      } catch (e) {
+        // If backend status can't be fetched, don't block the app; assume not configured.
+        return { backendConfigured: false, secretKeyPresent: false, webhookSecretPresent: false, message: "Unavailable" };
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  const backendConfigured = backendStatusQuery.data?.backendConfigured ?? false;
+  const stripeConfigured = frontendConfigured && backendConfigured;
 
   // If Stripe is not configured, show a warning but don't block the app
   if (!stripeConfigured) {
@@ -44,7 +62,7 @@ export default function ConfigGuard({ children }: Props) {
                 <p className="text-sm font-medium text-amber-800">Current Status:</p>
                 <div className="flex items-center gap-2">
                   <Badge variant={stripeConfigured ? "default" : "secondary"}>
-                    Stripe: {stripeConfigured ? "Configured" : "Not Configured"}
+                    Stripe: {stripeConfigured ? "Configured ✅" : "Not Configured"}
                   </Badge>
                 </div>
               </div>
@@ -55,9 +73,9 @@ export default function ConfigGuard({ children }: Props) {
                 </p>
                 <p>
                   Get your Stripe keys from the{" "}
-                  <a 
-                    href="https://dashboard.stripe.com/test/apikeys" 
-                    target="_blank" 
+                  <a
+                    href="https://dashboard.stripe.com/test/apikeys"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-amber-800 hover:text-amber-900 underline"
                   >

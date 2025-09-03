@@ -88,6 +88,7 @@ VITE_UNSPLASH_ACCESS_KEY=your_unsplash_key
 UNSPLASH_ACCESS_KEY=your_unsplash_key
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 
 Notes:
 - Do not hardcode keys in code. Always use environment variables.
@@ -96,18 +97,30 @@ Notes:
 ## Required Configuration
 
 ### Stripe (Required for Digital Store)
-- Frontend env:
+
+To enable the Digital Store and paid checkout with Stripe, you must set these env vars:
+
+- Frontend env (Vite):
   - VITE_STRIPE_PUBLISHABLE_KEY = pk_test_... (publishable key, safe to expose)
 
-- Backend env:
+- Backend env (Node/Encore):
   - STRIPE_SECRET_KEY = sk_test_... (secret key, server-side only)
+  - STRIPE_WEBHOOK_SECRET = whsec_... (required only if you plan to receive webhooks)
 
-- Test the store:
-  1. Set both VITE_STRIPE_PUBLISHABLE_KEY and STRIPE_SECRET_KEY.
-  2. Open Admin → Store → Add Product.
-  3. Upload a cover photo and digital file, set a price > 0.
-  4. Visit the landing page and click "Buy Now" to test Stripe checkout.
-  5. Use test card: 4242 4242 4242 4242, any future date, any CVC.
+After adding variables:
+1. Restart the app so changes take effect.
+2. Open Admin → Store and confirm the Stripe status shows “Stripe: Configured” and “Digital Store is enabled.”
+
+Test the store:
+1. Set the variables above.
+2. Open Admin → Store → Add Product.
+3. Upload a cover photo and digital file, set a price > 0.
+4. Visit the landing page and click “Buy Now” to test Stripe checkout.
+5. Use test card: 4242 4242 4242 4242, any future date, any CVC.
+
+If keys are missing:
+- The app will not crash; only the Digital Store will be disabled.
+- A clear message is logged in the console and shown in the Admin panel explaining how to configure Stripe.
 
 ## Optional Configuration
 
