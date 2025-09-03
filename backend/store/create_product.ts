@@ -41,102 +41,181 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
   async (req) => {
     const { org } = ensureConfigured();
 
-    if (!req.title?.trim()) {
-      throw APIError.invalidArgument("title is required");
+    // Validate required fields
+    if (!req.title || typeof req.title !== 'string' || !req.title.trim()) {
+      throw APIError.invalidArgument("title is required and must be a non-empty string");
     }
-    if (req.priceCents < 0) {
-      throw APIError.invalidArgument("priceCents cannot be negative");
+    
+    if (typeof req.priceCents !== 'number' || req.priceCents < 0) {
+      throw APIError.invalidArgument("priceCents must be a non-negative number");
     }
-    if (!req.productFile?.fileName || !req.productFile?.base64Data) {
-      throw APIError.invalidArgument("productFile is required with fileName and base64Data");
+    
+    if (!req.productFile) {
+      throw APIError.invalidArgument("productFile is required");
+    }
+    
+    if (!req.productFile.fileName || typeof req.productFile.fileName !== 'string' || !req.productFile.fileName.trim()) {
+      throw APIError.invalidArgument("productFile.fileName is required and must be a non-empty string");
+    }
+    
+    if (!req.productFile.base64Data || typeof req.productFile.base64Data !== 'string' || !req.productFile.base64Data.trim()) {
+      throw APIError.invalidArgument("productFile.base64Data is required and must be a non-empty string");
+    }
+    
+    if (!req.productFile.contentType || typeof req.productFile.contentType !== 'string') {
+      throw APIError.invalidArgument("productFile.contentType is required and must be a string");
+    }
+
+    // Validate optional cover image if provided
+    if (req.coverImage) {
+      if (!req.coverImage.fileName || typeof req.coverImage.fileName !== 'string' || !req.coverImage.fileName.trim()) {
+        throw APIError.invalidArgument("coverImage.fileName is required when coverImage is provided");
+      }
+      
+      if (!req.coverImage.base64Data || typeof req.coverImage.base64Data !== 'string' || !req.coverImage.base64Data.trim()) {
+        throw APIError.invalidArgument("coverImage.base64Data is required when coverImage is provided");
+      }
+      
+      if (!req.coverImage.contentType || typeof req.coverImage.contentType !== 'string') {
+        throw APIError.invalidArgument("coverImage.contentType is required when coverImage is provided");
+      }
     }
 
     const currency = (req.currency || "USD").toUpperCase();
 
-    // 1) Create the product container
-    // Polar likely expects: name, description, organization_id
-    const createdProduct = await polarRequest<any>("/v1/products", {
-      method: "POST",
-      body: JSON.stringify({
-        name: req.title,
-        description: req.description || "",
-        organization_id: org,
-        // Some APIs accept visibility/status fields; we omit to keep generic.
-      }),
-    });
-
-    const productId: string = createdProduct?.id;
-    if (!productId) {
-      throw APIError.internal("Polar did not return a product id");
+    // Validate currency
+    if (typeof currency !== 'string' || currency.length !== 3) {
+      throw APIError.invalidArgument("currency must be a valid 3-letter currency code");
     }
 
-    // 2) Create price (free or minimum/fixed)
-    // This tries a generic price creation endpoint. If Polar uses a different one,
-    // the error from Polar will be surfaced.
-    if (req.priceCents === 0) {
-      // Attempt a "free" price
-      await polarRequest<any>("/v1/product_prices", {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: productId,
-          is_free: true,
-          currency,
-          amount: 0,
-          type: "free",
-        }),
-      });
-    } else {
-      // Attempt a "minimum" (pay what you want) price using provided minimum
-      await polarRequest<any>("/v1/product_prices", {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: productId,
-          currency,
-          amount: req.priceCents,
-          type: "minimum",
-          // Some APIs may require additional fields; left minimal intentionally.
-        }),
-      });
+    // Validate description if provided
+    if (req.description !== undefined && (typeof req.description !== 'string' && req.description !== null)) {
+      throw APIError.invalidArgument("description must be a string or null/undefined");
     }
 
-    // 3) Upload product file (multipart). Endpoint may differ; we try a generic route:
     try {
-      const fileBuf = Buffer.from(req.productFile.base64Data, "base64");
-      await polarMultipartUpload(`/v1/products/${encodeURIComponent(productId)}/files`, {}, {
-        fileName: req.productFile.fileName,
-        contentType: req.productFile.contentType || "application/octet-stream",
-        data: fileBuf,
+      // 1) Create the product container
+      // Polar likely expects: name, description, organization_id
+      const createdProduct = await polarRequest<any>("/v1/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: req.title.trim(),
+          description: req.description?.trim() || "",
+          organization_id: org,
+          // Some APIs accept visibility/status fields; we omit to keep generic.
+        }),
       });
-    } catch (err) {
-      // If upload fails, surface a detailed error to the user instead of silently failing.
-      throw APIError.failedPrecondition(
-        "Failed to upload product file to Polar. Please verify your account has product uploads enabled."
-      );
-    }
 
-    // 4) Optional: upload cover image
-    if (req.coverImage?.fileName && req.coverImage?.base64Data) {
-      try {
-        const imgBuf = Buffer.from(req.coverImage.base64Data, "base64");
-        await polarMultipartUpload(
-          `/v1/products/${encodeURIComponent(productId)}/images`,
-          {},
-          {
-            fileName: req.coverImage.fileName,
-            contentType: req.coverImage.contentType || "image/jpeg",
-            data: imgBuf,
-          }
-        );
-      } catch {
-        // Don't fail the entire creation if cover upload fails; present a partial success.
-        // The creator can update the cover inside Polar later.
+      const productId: string = createdProduct?.id;
+      if (!productId) {
+        throw APIError.internal("Polar did not return a product id");
       }
+
+      // 2) Create price (free or minimum/fixed)
+      // This tries a generic price creation endpoint. If Polar uses a different one,
+      // the error from Polar will be surfaced.
+      if (req.priceCents === 0) {
+        // Attempt a "free" price
+        await polarRequest<any>("/v1/product_prices", {
+          method: "POST",
+          body: JSON.stringify({
+            product_id: productId,
+            is_free: true,
+            currency,
+            amount: 0,
+            type: "free",
+          }),
+        });
+      } else {
+        // Attempt a "minimum" (pay what you want) price using provided minimum
+        await polarRequest<any>("/v1/product_prices", {
+          method: "POST",
+          body: JSON.stringify({
+            product_id: productId,
+            currency,
+            amount: req.priceCents,
+            type: "minimum",
+            // Some APIs may require additional fields; left minimal intentionally.
+          }),
+        });
+      }
+
+      // 3) Upload product file (multipart). Endpoint may differ; we try a generic route:
+      try {
+        // Validate base64 data before processing
+        let cleanBase64 = req.productFile.base64Data.trim();
+        if (cleanBase64.includes(',')) {
+          // Remove data URL prefix if present
+          cleanBase64 = cleanBase64.split(',')[1];
+        }
+        
+        const fileBuf = Buffer.from(cleanBase64, "base64");
+        if (fileBuf.length === 0) {
+          throw APIError.invalidArgument("productFile.base64Data contains invalid base64 data");
+        }
+        
+        await polarMultipartUpload(`/v1/products/${encodeURIComponent(productId)}/files`, {}, {
+          fileName: req.productFile.fileName.trim(),
+          contentType: req.productFile.contentType || "application/octet-stream",
+          data: fileBuf,
+        });
+      } catch (err: any) {
+        console.error("Product file upload error:", err);
+        // If upload fails, surface a detailed error to the user instead of silently failing.
+        if (err.code) {
+          throw err; // Re-throw APIErrors
+        }
+        throw APIError.failedPrecondition(
+          "Failed to upload product file to Polar. Please verify your account has product uploads enabled and the file is valid."
+        );
+      }
+
+      // 4) Optional: upload cover image
+      if (req.coverImage?.fileName && req.coverImage?.base64Data) {
+        try {
+          // Validate base64 data before processing
+          let cleanBase64 = req.coverImage.base64Data.trim();
+          if (cleanBase64.includes(',')) {
+            // Remove data URL prefix if present
+            cleanBase64 = cleanBase64.split(',')[1];
+          }
+          
+          const imgBuf = Buffer.from(cleanBase64, "base64");
+          if (imgBuf.length === 0) {
+            console.warn("Invalid base64 data for cover image, skipping upload");
+          } else {
+            await polarMultipartUpload(
+              `/v1/products/${encodeURIComponent(productId)}/images`,
+              {},
+              {
+                fileName: req.coverImage.fileName.trim(),
+                contentType: req.coverImage.contentType || "image/jpeg",
+                data: imgBuf,
+              }
+            );
+          }
+        } catch (err) {
+          console.error("Cover image upload error:", err);
+          // Don't fail the entire creation if cover upload fails; present a partial success.
+          // The creator can update the cover inside Polar later.
+        }
+      }
+
+      // 5) Fetch fresh product details to return mapped fields back to the client
+      const fetched = await polarRequest<any>(`/v1/products/${encodeURIComponent(productId)}`);
+      const mapped = mapPolarProduct(fetched);
+
+      return { product: mapped };
+    } catch (error: any) {
+      console.error("Create product error:", error);
+      
+      // If it's already an APIError, re-throw it
+      if (error.code) {
+        throw error;
+      }
+      
+      // Otherwise, wrap it in a generic error
+      throw APIError.internal(`Failed to create product: ${error.message || 'Unknown error'}`);
     }
-
-    // 5) Fetch fresh product details to return mapped fields back to the client
-    const fetched = await polarRequest<any>(`/v1/products/${encodeURIComponent(productId)}`);
-    const mapped = mapPolarProduct(fetched);
-
-    return { product: mapped };
   }
 );

@@ -30,7 +30,8 @@ function bytesToBase64(file: File): Promise<{ base64: string; contentType: strin
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.onload = () => {
       const result = reader.result as string;
-      const base64 = result.split(",").pop() || "";
+      // Remove the data URL prefix (e.g., "data:image/png;base64,")
+      const base64 = result.includes(',') ? result.split(",").pop() || "" : result;
       resolve({ base64, contentType: file.type || "application/octet-stream" });
     };
     reader.readAsDataURL(file);
@@ -64,40 +65,66 @@ function StoreManagementContent() {
   const [cover, setCover] = useState<File | null>(null);
 
   const isDisabled = useMemo(() => {
-    return !title.trim() || !file || priceCents < 0;
+    return !title.trim() || !file || priceCents < 0 || !Number.isInteger(priceCents);
   }, [title, file, priceCents]);
 
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!file) throw new Error("Product file is required");
-      const fileB64 = await bytesToBase64(file);
-      let coverPayload: any = undefined;
-      if (cover) {
-        const coverB64 = await bytesToBase64(cover);
-        coverPayload = {
-          fileName: cover.name,
-          contentType: coverB64.contentType,
-          base64Data: coverB64.base64,
-        };
-      }
+      if (!title.trim()) throw new Error("Product title is required");
+      if (priceCents < 0) throw new Error("Price cannot be negative");
+      if (!Number.isInteger(priceCents)) throw new Error("Price must be a whole number");
 
-      return await backend.store.createProduct({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priceCents,
-        currency: "USD",
-        productFile: {
-          fileName: file.name,
-          contentType: fileB64.contentType,
-          base64Data: fileB64.base64,
-        },
-        coverImage: coverPayload,
-      });
+      try {
+        const fileB64 = await bytesToBase64(file);
+        
+        // Validate that we got valid base64 data
+        if (!fileB64.base64 || fileB64.base64.trim().length === 0) {
+          throw new Error("Failed to convert file to base64");
+        }
+
+        let coverPayload: any = undefined;
+        if (cover) {
+          try {
+            const coverB64 = await bytesToBase64(cover);
+            
+            // Only include cover if we got valid base64 data
+            if (coverB64.base64 && coverB64.base64.trim().length > 0) {
+              coverPayload = {
+                fileName: cover.name.trim(),
+                contentType: coverB64.contentType || "image/jpeg",
+                base64Data: coverB64.base64,
+              };
+            }
+          } catch (coverError) {
+            console.warn("Failed to process cover image, proceeding without it:", coverError);
+            // Continue without cover image
+          }
+        }
+
+        const payload = {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          priceCents: Math.round(priceCents), // Ensure it's an integer
+          currency: "USD",
+          productFile: {
+            fileName: file.name.trim(),
+            contentType: fileB64.contentType || "application/octet-stream",
+            base64Data: fileB64.base64,
+          },
+          coverImage: coverPayload,
+        };
+
+        return await backend.store.createProduct(payload);
+      } catch (error: any) {
+        console.error("Error preparing product data:", error);
+        throw new Error(`Failed to prepare product data: ${error.message}`);
+      }
     },
     onSuccess: () => {
       toast({
         title: "Product Created",
-        description: "Your product was created in Polar.",
+        description: "Your product was created in Polar successfully.",
       });
       setTitle("");
       setDescription("");
@@ -108,11 +135,22 @@ function StoreManagementContent() {
     },
     onError: (error: any) => {
       console.error("Create product failed:", error);
+      
+      let errorMessage = "Failed to create product. Please try again.";
+      
+      if (error?.message) {
+        if (error.message.includes("invalid_argument")) {
+          errorMessage = "Invalid product data. Please check your inputs and try again.";
+        } else if (error.message.includes("Failed to prepare product data")) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Create Failed",
-        description:
-          error?.message ||
-          "Failed to create product. Ensure your Polar account allows product uploads.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -227,7 +265,11 @@ function StoreManagementContent() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
+                    maxLength={200}
                   />
+                  <div className="text-xs text-muted-foreground">
+                    {title.length}/200 characters
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -238,7 +280,11 @@ function StoreManagementContent() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
+                    maxLength={1000}
                   />
+                  <div className="text-xs text-muted-foreground">
+                    {description.length}/1000 characters
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -251,32 +297,37 @@ function StoreManagementContent() {
                         type="number"
                         min={0}
                         step="0.01"
-                        value={(priceCents / 100).toString()}
+                        value={(priceCents / 100).toFixed(2)}
                         onChange={(e) => {
-                          const dollars = Number(e.target.value || "0");
+                          const dollars = parseFloat(e.target.value || "0");
                           const cents = Math.round(dollars * 100);
-                          setPriceCents(Number.isFinite(cents) ? cents : 0);
+                          setPriceCents(Number.isFinite(cents) && cents >= 0 ? cents : 0);
                         }}
                       />
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Set to 0 for free products (buyers still go through Polar checkout)
+                      Set to 0.00 for free products (buyers still go through Polar checkout)
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="file">Product File</Label>
+                    <Label htmlFor="file">Product File *</Label>
                     <Input
                       id="file"
                       type="file"
                       accept="*/*"
                       onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      required
                     />
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <FileIcon className="h-4 w-4" />
-                      {file ? file.name : "No file selected"}
+                      {file ? (
+                        <span>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      ) : (
+                        "No file selected"
+                      )}
                     </div>
                   </div>
 
@@ -290,7 +341,11 @@ function StoreManagementContent() {
                     />
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <ImageIcon className="h-4 w-4" />
-                      {cover ? cover.name : "No image selected"}
+                      {cover ? (
+                        <span>{cover.name} ({(cover.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      ) : (
+                        "No image selected"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -309,6 +364,12 @@ function StoreManagementContent() {
                     </>
                   )}
                 </Button>
+                
+                {isDisabled && (
+                  <div className="text-xs text-muted-foreground">
+                    Please fill in the title, select a file, and ensure the price is valid.
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>
