@@ -76,21 +76,24 @@ The system provides real-time verification and detailed setup instructions for p
 
 ### Stripe Configuration
 
-This project uses Stripe with proper key separation:
+This project uses Stripe with proper key separation. Never hardcode any keys.
 
-- Backend (Encore server) uses the SECRET key (sk_...) for secure operations.
-- Frontend (React/Vite) uses the PUBLISHABLE key (pk_...) with Stripe.js only.
+Required keys:
+- STRIPE_SECRET_KEY (backend secret key, used by server)
+- STRIPE_WEBHOOK_SECRET (backend secret, used for verifying Stripe webhook events)
+- STRIPE_PUBLISHABLE_KEY (frontend publishable key, used by Stripe.js in the browser)
 
 Configure as follows:
 
-- Backend secret (set in Infrastructure -> Secrets):
+- Backend secrets (set in Infrastructure -> Secrets):
   - STRIPE_SECRET_KEY = sk_test_123...
+  - STRIPE_WEBHOOK_SECRET = whsec_123...
 
 - Frontend config (edit frontend/config.ts):
-  - stripePublishableKey = "pk_test_123..."
+  - STRIPE_PUBLISHABLE_KEY = "pk_test_123..."
 
 Important:
 - Never put secret keys in the frontend.
 - The backend validates that the secret key exists and starts with "sk_".
+- The backend validates the webhook secret looks correct (starts with "whsec_").
 - The frontend loader validates that the publishable key exists and starts with "pk_".
-

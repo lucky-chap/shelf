@@ -1,9 +1,6 @@
 import { api, APIError } from "encore.dev/api";
 import { storeDB } from "./db";
-import { secret } from "encore.dev/config";
-import Stripe from "stripe";
-
-const STRIPE_SECRET_KEY = secret("STRIPE_SECRET_KEY");
+import { newStripeClient } from "./stripe";
 
 export interface CreateCheckoutSessionRequest {
   productId: number;
@@ -64,16 +61,8 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
         );
       }
 
-      // For paid products, check if Stripe is configured
-      const sk = STRIPE_SECRET_KEY();
-      if (!sk) {
-        throw APIError.failedPrecondition("Stripe secret key not configured. Set STRIPE_SECRET_KEY in Infrastructure -> Secrets.");
-      }
-      if (!sk.startsWith("sk_")) {
-        throw APIError.failedPrecondition("Invalid Stripe secret key configured. It must start with 'sk_'.");
-      }
-
-      const stripe = new Stripe(sk, { apiVersion: "2024-06-20" });
+      // Create Stripe client (validates STRIPE_SECRET_KEY)
+      const stripe = newStripeClient();
 
       try {
         const session = await stripe.checkout.sessions.create({

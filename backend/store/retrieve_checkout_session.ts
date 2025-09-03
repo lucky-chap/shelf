@@ -1,9 +1,6 @@
 import { api, APIError } from "encore.dev/api";
-import { secret } from "encore.dev/config";
-import Stripe from "stripe";
+import { newStripeClient } from "./stripe";
 import { productFiles } from "./buckets";
-
-const STRIPE_SECRET_KEY = secret("STRIPE_SECRET_KEY");
 
 export interface RetrieveCheckoutSessionRequest {
   sessionId: string;
@@ -19,15 +16,7 @@ export const retrieveCheckoutSession = api<RetrieveCheckoutSessionRequest, Retri
   { expose: true, method: "GET", path: "/store/checkout/session/:sessionId" },
   async ({ sessionId }) => {
     try {
-      const sk = STRIPE_SECRET_KEY();
-      if (!sk) {
-        throw APIError.failedPrecondition("Stripe secret key not configured. Set STRIPE_SECRET_KEY in Infrastructure -> Secrets.");
-      }
-      if (!sk.startsWith("sk_")) {
-        throw APIError.failedPrecondition("Invalid Stripe secret key configured. It must start with 'sk_'.");
-      }
-
-      const stripe = new Stripe(sk, { apiVersion: "2024-06-20" });
+      const stripe = newStripeClient();
 
       let session;
       try {
