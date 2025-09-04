@@ -161,16 +161,23 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     }
 
     try {
-      // 1) Create the product container
-      // Polar likely expects: name, description, organization_id
+      // 1) Create the product container with minimal required fields
+      // Use the exact field names Polar expects
+      const productPayload = {
+        name: req.title.trim(),
+        organization_id: org,
+        is_recurring: false,
+        is_archived: false
+      };
+
+      // Only add description if it exists and is not empty
+      if (req.description && req.description.trim()) {
+        productPayload.description = req.description.trim();
+      }
+
       const createdProduct = await polarRequest<any>("/v1/products", {
         method: "POST",
-        body: JSON.stringify({
-          name: req.title.trim(),
-          description: req.description?.trim() || "",
-          organization_id: org,
-          // Some APIs accept visibility/status fields; we omit to keep generic.
-        }),
+        body: JSON.stringify(productPayload),
       });
 
       const productId: string = createdProduct?.id;
@@ -178,34 +185,37 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         throw APIError.internal("Polar did not return a product id");
       }
 
-      // 2) Create price (free or minimum/fixed)
-      // This tries a generic price creation endpoint. If Polar uses a different one,
-      // the error from Polar will be surfaced.
+      // 2) Create price based on whether it's free or paid
+      const pricePayload: any = {
+        product_id: productId,
+        price_currency: currency,
+      };
+
       if (req.priceCents === 0) {
-        // Attempt a "free" price
-        await polarRequest<any>("/v1/product_prices", {
-          method: "POST",
-          body: JSON.stringify({
-            product_id: productId,
-            is_free: true,
-            currency,
-            amount: 0,
-            type: "free",
-          }),
-        });
+        // For free products, use a one-time price with amount 0
+        pricePayload.type = "one_time";
+        pricePayload.price_amount = 0;
       } else {
-        // Attempt a "minimum" (pay what you want) price using provided minimum
-        await polarRequest<any>("/v1/product_prices", {
-          method: "POST",
-          body: JSON.stringify({
-            product_id: productId,
-            currency,
-            amount: req.priceCents,
-            type: "minimum",
-            // Some APIs may require additional fields; left minimal intentionally.
-          }),
-        });
+        // For paid products, create a one-time price with the specified amount
+        pricePayload.type = "one_time";
+        pricePayload.price_amount = req.priceCents;
       }
+
+      await polarRequest<any>("/v1/products/benefits", {
+        method: "POST",
+        body: JSON.stringify({
+          product_id: productId,
+          type: "downloadables",
+          description: "Digital download",
+          is_tax_applicable: false,
+        }),
+      });
+
+      // Create the price
+      await polarRequest<any>("/v1/products/prices", {
+        method: "POST",
+        body: JSON.stringify(pricePayload),
+      });
 
       // 3) Upload product file using improved multipart upload
       try {
@@ -218,7 +228,9 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         
         const fileBuf = Buffer.from(cleanBase64, "base64");
         
-        await polarMultipartUpload(`/v1/products/${encodeURIComponent(productId)}/files`, {}, {
+        await polarMultipartUpload(`/v1/products/${encodeURIComponent(productId)}/benefits/downloadables/files`, {
+          product_id: productId,
+        }, {
           fileName: req.productFile.fileName.trim(),
           contentType: req.productFile.contentType || "application/octet-stream",
           data: fileBuf,
@@ -234,7 +246,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         );
       }
 
-      // 4) Optional: upload cover image using improved multipart upload
+      // 4) Optional: upload cover image
       if (req.coverImage?.fileName && req.coverImage?.base64Data) {
         try {
           // Process base64 data
@@ -246,9 +258,12 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
           
           const imgBuf = Buffer.from(cleanBase64, "base64");
           
+          // Upload media to product
           await polarMultipartUpload(
-            `/v1/products/${encodeURIComponent(productId)}/images`,
-            {},
+            `/v1/products/${encodeURIComponent(productId)}/media`,
+            {
+              product_id: productId,
+            },
             {
               fileName: req.coverImage.fileName.trim(),
               contentType: req.coverImage.contentType || "image/jpeg",
@@ -273,6 +288,11 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       // If it's already an APIError, re-throw it
       if (error.code) {
         throw error;
+      }
+      
+      // Parse Polar API error responses more carefully
+      if (error.message && error.message.includes("RequestValidationError")) {
+        throw APIError.invalidArgument("Invalid request data sent to Polar. Please check all product information and try again.");
       }
       
       // Otherwise, wrap it in a generic error

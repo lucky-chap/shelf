@@ -46,27 +46,51 @@ export async function polarRequest<T>(
     Accept: "application/json",
     ...(options.headers as Record<string, string> | undefined),
   };
+  
   const resp = await fetch(url, { ...options, headers });
+  
   if (!resp.ok) {
     let body: any = null;
+    let errorMessage = `Polar API error ${resp.status} ${resp.statusText}`;
+    
     try {
       body = await resp.json();
-    } catch {
-      // ignore
+      console.error("Polar API error response:", body);
+      
+      // Extract more detailed error information
+      if (body?.detail) {
+        if (Array.isArray(body.detail)) {
+          // Handle validation errors with field details
+          const fieldErrors = body.detail.map((err: any) => {
+            if (err.loc && err.msg) {
+              return `${err.loc.join('.')}: ${err.msg}`;
+            }
+            return err.msg || JSON.stringify(err);
+          }).join(', ');
+          errorMessage = `Validation error: ${fieldErrors}`;
+        } else if (typeof body.detail === 'string') {
+          errorMessage = body.detail;
+        }
+      } else if (body?.message) {
+        errorMessage = body.message;
+      } else if (body?.error) {
+        errorMessage = body.error;
+      }
+    } catch (parseError) {
+      console.error("Failed to parse Polar error response:", parseError);
+      // Use the default error message if we can't parse the response
     }
-    const msg =
-      body?.message ||
-      body?.error ||
-      `Polar API error ${resp.status} ${resp.statusText}`;
-    // Prefer detailed errors if Polar returns them
-    if (resp.status === 401) throw APIError.unauthenticated(msg);
-    if (resp.status === 403) throw APIError.permissionDenied(msg);
-    if (resp.status === 404) throw APIError.notFound(msg);
-    if (resp.status === 429) throw APIError.resourceExhausted(msg);
-    if (resp.status >= 400 && resp.status < 500)
-      throw APIError.invalidArgument(msg);
-    throw APIError.internal(msg);
+    
+    // Map HTTP status codes to appropriate APIError types
+    if (resp.status === 401) throw APIError.unauthenticated(errorMessage);
+    if (resp.status === 403) throw APIError.permissionDenied(errorMessage);
+    if (resp.status === 404) throw APIError.notFound(errorMessage);
+    if (resp.status === 422) throw APIError.invalidArgument(errorMessage); // Validation errors
+    if (resp.status === 429) throw APIError.resourceExhausted(errorMessage);
+    if (resp.status >= 400 && resp.status < 500) throw APIError.invalidArgument(errorMessage);
+    throw APIError.internal(errorMessage);
   }
+  
   return (await resp.json()) as T;
 }
 
@@ -81,12 +105,12 @@ export async function polarMultipartUpload(
   // Create a proper FormData object
   const formData = new FormData();
 
-  // Add regular fields
+  // Add regular fields first
   for (const [k, v] of Object.entries(fields)) {
     formData.append(k, v);
   }
 
-  // Add the file as a Blob
+  // Add the file as a Blob with proper name
   const blob = new Blob([file.data], { type: file.contentType });
   formData.append("file", blob, file.fileName);
 
@@ -104,13 +128,35 @@ export async function polarMultipartUpload(
     let errorText = `${resp.status} ${resp.statusText}`;
     try {
       const j = await resp.json();
-      errorText = j?.message || j?.error || errorText;
-    } catch {}
+      console.error("Polar upload error response:", j);
+      
+      // Extract detailed error information
+      if (j?.detail) {
+        if (Array.isArray(j.detail)) {
+          const fieldErrors = j.detail.map((err: any) => {
+            if (err.loc && err.msg) {
+              return `${err.loc.join('.')}: ${err.msg}`;
+            }
+            return err.msg || JSON.stringify(err);
+          }).join(', ');
+          errorText = `Upload validation error: ${fieldErrors}`;
+        } else {
+          errorText = j.detail;
+        }
+      } else if (j?.message) {
+        errorText = j.message;
+      } else if (j?.error) {
+        errorText = j.error;
+      }
+    } catch (parseError) {
+      console.error("Failed to parse upload error response:", parseError);
+    }
+    
     if (resp.status === 404) throw APIError.notFound(errorText);
     if (resp.status === 401) throw APIError.unauthenticated(errorText);
     if (resp.status === 403) throw APIError.permissionDenied(errorText);
-    if (resp.status >= 400 && resp.status < 500)
-      throw APIError.invalidArgument(errorText);
+    if (resp.status === 422) throw APIError.invalidArgument(errorText);
+    if (resp.status >= 400 && resp.status < 500) throw APIError.invalidArgument(errorText);
     throw APIError.internal(errorText);
   }
 
@@ -127,22 +173,28 @@ export interface PolarProduct {
   id: string;
   name?: string;
   description?: string | null;
-  image_url?: string | null;
+  media?: Array<{
+    id: string;
+    name: string;
+    path: string;
+    mime_type: string;
+    size: number;
+    public_url?: string;
+  }>;
   prices?: Array<{
     id: string;
-    amount?: number | null;
-    currency?: string | null;
-    type?: string | null; // e.g. "fixed", "minimum", "free"
-    is_free?: boolean | null;
-    checkout_url?: string | null;
+    price_amount?: number | null;
+    price_currency?: string | null;
+    type?: string | null; // e.g. "one_time", "recurring"
+    is_archived?: boolean;
   }>;
-  checkout_url?: string | null;
 }
 
 export interface PolarListProductsResponse {
   items?: PolarProduct[];
   data?: PolarProduct[];
-  results?: PolarProduct[];
+  result?: PolarProduct[];
+  pagination?: any;
 }
 
 export function mapPolarProduct(p: PolarProduct): {
@@ -157,29 +209,42 @@ export function mapPolarProduct(p: PolarProduct): {
 } {
   const title = p.name || "Untitled Product";
   const description = (p.description as string) || null;
-  const coverUrl = p.image_url || null;
+  
+  // Extract cover image from media
+  let coverUrl: string | null = null;
+  if (Array.isArray(p.media) && p.media.length > 0) {
+    // Find the first image media item
+    const imageMedia = p.media.find(media => 
+      media.mime_type && media.mime_type.startsWith('image/')
+    );
+    if (imageMedia && imageMedia.public_url) {
+      coverUrl = imageMedia.public_url;
+    }
+  }
+  
   let priceCents = 0;
   let priceCurrency = "USD";
-  let isFree = false;
-  let checkoutUrl: string | null =
-    p.checkout_url || p.prices?.find((pr) => pr?.checkout_url)?.checkout_url || null;
+  let isFree = true;
+  let checkoutUrl: string | null = null;
 
   if (Array.isArray(p.prices) && p.prices.length > 0) {
-    // Prefer a fixed/minimum USD price if available
-    const preferred =
-      p.prices.find((pr) => pr?.currency?.toUpperCase() === "USD" && pr?.type === "fixed") ||
-      p.prices.find((pr) => pr?.currency?.toUpperCase() === "USD") ||
-      p.prices[0];
-
-    if (preferred) {
-      if (typeof preferred.amount === "number") priceCents = preferred.amount;
-      if (preferred.currency) priceCurrency = preferred.currency.toUpperCase();
-      if (preferred.is_free) isFree = true;
-      checkoutUrl = checkoutUrl || preferred.checkout_url || null;
+    // Find the first active (non-archived) price
+    const activePrice = p.prices.find(price => !price.is_archived) || p.prices[0];
+    
+    if (activePrice) {
+      if (typeof activePrice.price_amount === "number") {
+        priceCents = activePrice.price_amount;
+        isFree = priceCents === 0;
+      }
+      if (activePrice.price_currency) {
+        priceCurrency = activePrice.price_currency.toUpperCase();
+      }
     }
   }
 
-  if (priceCents === 0) isFree = true;
+  // For now, we don't have direct checkout URLs from the product data
+  // This would need to be generated separately if needed
+  checkoutUrl = null;
 
   return {
     id: p.id,
