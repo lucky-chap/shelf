@@ -164,7 +164,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       // 1) Create the product container with properly structured prices array
       const productPayload: any = {
         name: req.title.trim(),
-        organization_id: org,
+        // organization_id: org,
         is_recurring: false,
         is_archived: false,
         // Add required recurring_interval field (even though product is not recurring)
