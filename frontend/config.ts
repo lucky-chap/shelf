@@ -11,7 +11,6 @@ const envStripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 // Exported values for use in the app
 export const UNSPLASH_ACCESS_KEY = envUnsplashKey;
-export const STRIPE_PUBLISHABLE_KEY = envStripePublishableKey;
 
 // Check if Unsplash is configured
 export const isUnsplashConfigured = () => {
@@ -20,6 +19,6 @@ export const isUnsplashConfigured = () => {
 
 // Check if Stripe is configured
 export const isStripeConfigured = () => {
-	console.log("publishable key state: ", envStripePublishableKey)
+	// console.log("publishable key state: ", envStripePublishableKey)
   return typeof envStripePublishableKey === "string" && envStripePublishableKey.trim().length > 0;
 };
