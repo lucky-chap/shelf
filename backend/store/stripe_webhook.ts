@@ -28,7 +28,7 @@ export interface StripeWebhookResponse {
 export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
   { expose: true, method: "POST", path: "/store/webhook" },
   async (req) => {
-    const stripeSecretKey = stripeSecretKey readEnv("STRIPE_SECRET_KEY");
+
     const webhookSecret = stripeWebhookSecret;
 
     if (!webhookSecret) {
