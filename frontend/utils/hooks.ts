@@ -8,19 +8,10 @@ async function fetchPublishableKey() {
 
 	console.log("publishable key in hook: ", res.publishableKey);
 
-  if (!res.publishableKey || typeof res.publishableKey !== "string" || !res.publishableKey.trim()) {
-	// 	return {
-	// 	key: undefined,
-	// 	configured: false,
-	// };
-		return undefined 
-    // throw new Error("Stripe publishable key is missing or invalid");
-  }
+  // if (!res.publishableKey || typeof res.publishableKey !== "string" || !res.publishableKey.trim()) {
+		// return undefined 
+  // }
 
- //  return {
-	// 	key: res.publishableKey,
-	// 	configured: true,
-	// };
 	res.publishableKey
 }
 
