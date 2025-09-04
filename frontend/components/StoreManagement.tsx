@@ -101,8 +101,8 @@ function StoreManagementContent() {
   const [cover, setCover] = useState<File | null>(null);
 
   const isDisabled = useMemo(() => {
-    return !title.trim() || !file || priceCents < 0 || !Number.isInteger(priceCents);
-  }, [title, file, priceCents]);
+    return !file || priceCents < 0 || !Number.isInteger(priceCents);
+  }, [file, priceCents]);
 
   // Check if price is below Polar's minimum (but not free)
   const isPriceBelowMinimum = useMemo(() => {
@@ -112,10 +112,6 @@ function StoreManagementContent() {
   const createMutation = useMutation({
     mutationFn: async () => {
       // Validate inputs before processing
-      if (!title.trim()) {
-        throw new Error("Product title is required");
-      }
-      
       if (!file) {
         throw new Error("Product file is required");
       }
@@ -139,7 +135,6 @@ function StoreManagementContent() {
 
         // Prepare the base payload structure
         const payload: any = {
-          title: title,
           priceCents: priceCents,
           currency: "USD", // Polar only supports USD
           productFile: {
@@ -148,6 +143,12 @@ function StoreManagementContent() {
             base64Data: fileB64.base64,
           }
         };
+
+        // Only add title if it's not empty, otherwise let backend use "Untitled"
+        const trimmedTitle = title.trim();
+        if (trimmedTitle) {
+          payload.title = trimmedTitle;
+        }
 
         // Only add description if it's not empty
         const trimmedDescription = description.trim();
@@ -177,10 +178,6 @@ function StoreManagementContent() {
         }
 
         // Final validation of the payload structure
-        if (!payload.title || typeof payload.title !== 'string') {
-          throw new Error("Invalid title");
-        }
-        
         if (typeof payload.priceCents !== 'number' || payload.priceCents < 0) {
           throw new Error("Invalid price");
         }
@@ -217,9 +214,7 @@ function StoreManagementContent() {
       
       if (error?.message) {
         // Check for specific validation errors
-        if (error.message.includes("title") || error.message.includes("Title")) {
-          errorMessage = "Product title is invalid. Please check your title and try again.";
-        } else if (error.message.includes("price") || error.message.includes("Price")) {
+        if (error.message.includes("price") || error.message.includes("Price")) {
           errorMessage = "Product price is invalid. Please enter a valid price.";
         } else if (error.message.includes("file") || error.message.includes("File")) {
           errorMessage = "Product file is invalid. Please select a valid file.";
@@ -350,7 +345,7 @@ function StoreManagementContent() {
             <CardHeader>
               <CardTitle>Create Product</CardTitle>
               <CardDescription>
-                Upload a digital file, optional cover image, and set a price. Note: Polar requires a minimum price of $0.50 USD for paid products.
+                Upload a digital file, optional cover image, and set a price. Note: Polar requires a minimum price of $0.50 USD for paid products. If no title is provided, the product will be named "Untitled".
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -362,17 +357,16 @@ function StoreManagementContent() {
                 }}
               >
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
+                  <Label htmlFor="title">Title (optional)</Label>
                   <Input
                     id="title"
-                    placeholder="Product title"
+                    placeholder="Product title (leave empty for 'Untitled')"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    required
                     maxLength={200}
                   />
                   <div className="text-xs text-muted-foreground">
-                    {title.length}/200 characters
+                    {title.length}/200 characters. If empty, will be named "Untitled".
                   </div>
                 </div>
 
@@ -487,7 +481,7 @@ function StoreManagementContent() {
                 
                 {isDisabled && (
                   <div className="text-xs text-muted-foreground">
-                    Please fill in the title, select a file, and ensure the price is valid.
+                    Please select a file and ensure the price is valid.
                   </div>
                 )}
               </form>

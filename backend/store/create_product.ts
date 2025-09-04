@@ -9,7 +9,7 @@ export interface CreateProductFile {
 }
 
 export interface CreateProductRequest {
-  title: string;
+  title?: string;
   description?: string;
   // Price in the smallest currency unit (e.g. cents). 0 => free.
   priceCents: number;
@@ -40,11 +40,12 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     // Ensure Polar is configured
     ensureConfigured();
 
+    // Use "Untitled" as fallback if no title provided
+    const productTitle = req.title && typeof req.title === 'string' && req.title.trim() 
+      ? req.title.trim() 
+      : "Untitled";
+
     // Validate required fields with more specific error messages
-    if (!req.title || typeof req.title !== 'string' || !req.title.trim()) {
-      throw APIError.invalidArgument("title is required and must be a non-empty string");
-    }
-    
     if (typeof req.priceCents !== 'number') {
       throw APIError.invalidArgument("priceCents must be a number");
     }
@@ -143,7 +144,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     try {
       // 1) Create the product container with properly structured prices array
       const productPayload: any = {
-        name: req.title.trim(),
+        name: productTitle,
         isRecurring: false,
         isArchived: false,
         recurringInterval: null,
