@@ -29,8 +29,12 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
     const stripeSecretKey = readEnv("STRIPE_SECRET_KEY");
     const webhookSecret = readEnv("STRIPE_WEBHOOK_SECRET");
 
-    if (!stripeSecretKey || !webhookSecret) {
-      throw APIError.failedPrecondition("Stripe not configured");
+    if (!webhookSecret) {
+      throw APIError.failedPrecondition("Stripe webhook secret not configured");
+    }
+
+		if (!stripeSecretKey) {
+      throw APIError.failedPrecondition("Stripe secret key not configured");
     }
 
     if (!req.stripeSignature) {
