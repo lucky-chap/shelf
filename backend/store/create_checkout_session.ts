@@ -30,8 +30,7 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
   { expose: true, method: "POST", path: "/store/checkout" },
   async (req) => {
     const stripeSecretKey = readEnv("STRIPE_SECRET_KEY");
-		const STRIPE_SECRET_KEY = secret("STRIPE_SECRET_KEY");
-    if (!STRIPE_SECRET_KEY) {
+    if (!secret(STRIPE_SECRET_KEY)) {
       throw APIError.failedPrecondition("Stripe not configured (STRIPE_SECRET_KEY missing)");
     }
 
