@@ -9,7 +9,6 @@ export interface GetFrontendKeysResponse {
 export const getFrontendKeys = api<void, GetFrontendKeysResponse>(
   { expose: true, method: "GET", path: "/stripe/publishable-key" },
   async () => {
-		console.log("Env key on backend: ", stripePublishableKey())
 		const publishableKey = stripePublishableKey()
     if (!stripePublishableKey()) {
       throw new Error("Stripe publishable key is not configured");
