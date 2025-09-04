@@ -1,5 +1,6 @@
 import { APIError } from "encore.dev/api";
 import { secret } from "encore.dev/config";
+import { Polar } from "@polar-sh/sdk";
 
 const polarApiKeySecret = secret("PolarAPIKey");
 const polarOrgIdSecret = secret("PolarOrganizationID");
@@ -33,142 +34,22 @@ export function ensureConfigured() {
   return { key, org };
 }
 
-export async function polarRequest<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+// Initialize Polar SDK client
+let polarClient: Polar | null = null;
+
+export function getPolarClient(): Polar {
   const { key } = ensureConfigured();
-  const base = "https://api.polar.sh";
-  const url = path.startsWith("http") ? path : `${base}${path}`;
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ...(options.headers as Record<string, string> | undefined),
-  };
   
-  const resp = await fetch(url, { ...options, headers });
-  
-  if (!resp.ok) {
-    let body: any = null;
-    let errorMessage = `Polar API error ${resp.status} ${resp.statusText}`;
-    
-    try {
-      body = await resp.json();
-      console.error("Polar API error response:", body);
-      
-      // Extract more detailed error information
-      if (body?.detail) {
-        if (Array.isArray(body.detail)) {
-          // Handle validation errors with field details
-          const fieldErrors = body.detail.map((err: any) => {
-            if (err.loc && err.msg) {
-              return `${err.loc.join('.')}: ${err.msg}`;
-            }
-            return err.msg || JSON.stringify(err);
-          }).join(', ');
-          errorMessage = `Validation error: ${fieldErrors}`;
-        } else if (typeof body.detail === 'string') {
-          errorMessage = body.detail;
-        }
-      } else if (body?.message) {
-        errorMessage = body.message;
-      } else if (body?.error) {
-        errorMessage = body.error;
-      }
-    } catch (parseError) {
-      console.error("Failed to parse Polar error response:", parseError);
-      // Use the default error message if we can't parse the response
-    }
-    
-    // Map HTTP status codes to appropriate APIError types
-    if (resp.status === 401) throw APIError.unauthenticated(errorMessage);
-    if (resp.status === 403) throw APIError.permissionDenied(errorMessage);
-    if (resp.status === 404) throw APIError.notFound(errorMessage);
-    if (resp.status === 422) throw APIError.invalidArgument(errorMessage); // Validation errors
-    if (resp.status === 429) throw APIError.resourceExhausted(errorMessage);
-    if (resp.status >= 400 && resp.status < 500) throw APIError.invalidArgument(errorMessage);
-    throw APIError.internal(errorMessage);
+  if (!polarClient) {
+    polarClient = new Polar({
+      accessToken: key,
+    });
   }
   
-  return (await resp.json()) as T;
-}
-
-// Improved multipart upload using proper FormData construction
-export async function polarMultipartUpload(
-  path: string,
-  fields: Record<string, string>,
-  file: { fileName: string; contentType: string; data: Buffer }
-): Promise<any> {
-  const { key } = ensureConfigured();
-
-  // Create a proper FormData object
-  const formData = new FormData();
-
-  // Add regular fields first
-  for (const [k, v] of Object.entries(fields)) {
-    formData.append(k, v);
-  }
-
-  // Add the file as a Blob with proper name
-  const blob = new Blob([file.data], { type: file.contentType });
-  formData.append("file", blob, file.fileName);
-
-  const resp = await fetch(`https://api.polar.sh${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json",
-      // Don't set Content-Type, let the browser set it with the boundary
-    },
-    body: formData,
-  });
-
-  if (!resp.ok) {
-    let errorText = `${resp.status} ${resp.statusText}`;
-    try {
-      const j = await resp.json();
-      console.error("Polar upload error response:", j);
-      
-      // Extract detailed error information
-      if (j?.detail) {
-        if (Array.isArray(j.detail)) {
-          const fieldErrors = j.detail.map((err: any) => {
-            if (err.loc && err.msg) {
-              return `${err.loc.join('.')}: ${err.msg}`;
-            }
-            return err.msg || JSON.stringify(err);
-          }).join(', ');
-          errorText = `Upload validation error: ${fieldErrors}`;
-        } else {
-          errorText = j.detail;
-        }
-      } else if (j?.message) {
-        errorText = j.message;
-      } else if (j?.error) {
-        errorText = j.error;
-      }
-    } catch (parseError) {
-      console.error("Failed to parse upload error response:", parseError);
-    }
-    
-    if (resp.status === 404) throw APIError.notFound(errorText);
-    if (resp.status === 401) throw APIError.unauthenticated(errorText);
-    if (resp.status === 403) throw APIError.permissionDenied(errorText);
-    if (resp.status === 422) throw APIError.invalidArgument(errorText);
-    if (resp.status >= 400 && resp.status < 500) throw APIError.invalidArgument(errorText);
-    throw APIError.internal(errorText);
-  }
-
-  try {
-    return await resp.json();
-  } catch {
-    return {};
-  }
+  return polarClient;
 }
 
 // Types mirroring the fields we use from Polar responses.
-// Using loose typing to be resilient to Polar API shape changes.
 export interface PolarProduct {
   id: string;
   name?: string;
@@ -185,7 +66,7 @@ export interface PolarProduct {
     id: string;
     price_amount?: number | null;
     price_currency?: string | null;
-    type?: string | null; // e.g. "one_time", "recurring"
+    type?: string | null;
     is_archived?: boolean;
   }>;
 }
@@ -213,7 +94,6 @@ export function mapPolarProduct(p: PolarProduct): {
   // Extract cover image from media
   let coverUrl: string | null = null;
   if (Array.isArray(p.media) && p.media.length > 0) {
-    // Find the first image media item
     const imageMedia = p.media.find(media => 
       media.mime_type && media.mime_type.startsWith('image/')
     );
@@ -228,7 +108,6 @@ export function mapPolarProduct(p: PolarProduct): {
   let checkoutUrl: string | null = null;
 
   if (Array.isArray(p.prices) && p.prices.length > 0) {
-    // Find the first active (non-archived) price
     const activePrice = p.prices.find(price => !price.is_archived) || p.prices[0];
     
     if (activePrice) {
@@ -242,10 +121,6 @@ export function mapPolarProduct(p: PolarProduct): {
     }
   }
 
-  // For now, we don't have direct checkout URLs from the product data
-  // This would need to be generated separately if needed
-  checkoutUrl = null;
-
   return {
     id: p.id,
     title,
@@ -256,4 +131,68 @@ export function mapPolarProduct(p: PolarProduct): {
     coverUrl,
     checkoutUrl,
   };
+}
+
+// Helper function to upload files using the SDK
+export async function uploadFile(
+  productId: string,
+  file: { fileName: string; contentType: string; data: Buffer }
+): Promise<any> {
+  const polar = getPolarClient();
+  
+  try {
+    // Convert buffer to Blob for the SDK
+    const blob = new Blob([file.data], { type: file.contentType });
+    
+    // Use the SDK's file upload method
+    const result = await polar.products.files.create({
+      id: productId,
+      file: blob,
+      filename: file.fileName,
+    });
+    
+    return result;
+  } catch (error: any) {
+    console.error("Polar file upload failed:", error);
+    
+    if (error.statusCode === 404) throw APIError.notFound("Product not found");
+    if (error.statusCode === 401) throw APIError.unauthenticated("Invalid Polar API key");
+    if (error.statusCode === 403) throw APIError.permissionDenied("Insufficient permissions");
+    if (error.statusCode === 422) throw APIError.invalidArgument("Invalid file or product data");
+    if (error.statusCode >= 400 && error.statusCode < 500) throw APIError.invalidArgument(error.message || "Client error");
+    
+    throw APIError.internal(`File upload failed: ${error.message || 'Unknown error'}`);
+  }
+}
+
+// Helper function to upload media using the SDK
+export async function uploadMedia(
+  productId: string,
+  file: { fileName: string; contentType: string; data: Buffer }
+): Promise<any> {
+  const polar = getPolarClient();
+  
+  try {
+    // Convert buffer to Blob for the SDK
+    const blob = new Blob([file.data], { type: file.contentType });
+    
+    // Use the SDK's media upload method
+    const result = await polar.products.media.create({
+      id: productId,
+      file: blob,
+      filename: file.fileName,
+    });
+    
+    return result;
+  } catch (error: any) {
+    console.error("Polar media upload failed:", error);
+    
+    if (error.statusCode === 404) throw APIError.notFound("Product not found");
+    if (error.statusCode === 401) throw APIError.unauthenticated("Invalid Polar API key");
+    if (error.statusCode === 403) throw APIError.permissionDenied("Insufficient permissions");
+    if (error.statusCode === 422) throw APIError.invalidArgument("Invalid media or product data");
+    if (error.statusCode >= 400 && error.statusCode < 500) throw APIError.invalidArgument(error.message || "Client error");
+    
+    throw APIError.internal(`Media upload failed: ${error.message || 'Unknown error'}`);
+  }
 }

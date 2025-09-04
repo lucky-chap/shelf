@@ -1,5 +1,5 @@
 import { api } from "encore.dev/api";
-import { ensureConfigured, mapPolarProduct, polarRequest, PolarListProductsResponse } from "./polar";
+import { ensureConfigured, mapPolarProduct, getPolarClient } from "./polar";
 
 export interface ListProductsResponse {
   products: Array<{
@@ -19,15 +19,36 @@ export const listProducts = api<void, ListProductsResponse>(
   { expose: true, method: "GET", path: "/store/products" },
   async () => {
     const { org } = ensureConfigured();
+    const polar = getPolarClient();
 
-    // Attempt to fetch products. Polar's API may use `items`, `data` or `results`.
-    const res = await polarRequest<PolarListProductsResponse>(
-      `/v1/products?organization_id=${encodeURIComponent(org)}&active=true`
-    );
+    try {
+      // Use the SDK to list products
+      const res = await polar.products.list({
+        organizationId: org,
+        isArchived: false,
+      });
 
-    const arr = res.items || res.data || res.results || [];
-    const products = arr.map(mapPolarProduct);
+      // The SDK should return the products directly
+      const products = res.items || res.result || [];
+      const mappedProducts = products.map(mapPolarProduct);
 
-    return { products };
+      return { products: mappedProducts };
+    } catch (error: any) {
+      console.error("List products error:", error);
+      
+      if (error.statusCode === 401) {
+        throw new Error("Invalid Polar API key");
+      }
+      
+      if (error.statusCode === 403) {
+        throw new Error("Insufficient permissions for Polar API");
+      }
+      
+      if (error.statusCode === 404) {
+        throw new Error("Polar organization not found");
+      }
+      
+      throw new Error(`Failed to list products: ${error.message || 'Unknown error'}`);
+    }
   }
 );
