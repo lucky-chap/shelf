@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, ShoppingCart, Image as ImageIcon, File as FileIcon, Plus, DollarSign } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Upload, ShoppingCart, Image as ImageIcon, File as FileIcon, Plus, DollarSign, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
@@ -103,6 +104,11 @@ function StoreManagementContent() {
     return !title.trim() || !file || priceCents < 0 || !Number.isInteger(priceCents);
   }, [title, file, priceCents]);
 
+  // Check if price is below Polar's minimum (but not free)
+  const isPriceBelowMinimum = useMemo(() => {
+    return priceCents > 0 && priceCents < 50;
+  }, [priceCents]);
+
   const createMutation = useMutation({
     mutationFn: async () => {
       // Validate inputs before processing
@@ -135,7 +141,7 @@ function StoreManagementContent() {
         const payload: any = {
           title: title.trim(),
           priceCents: priceCents,
-          currency: "USD",
+          currency: "USD", // Polar only supports USD
           productFile: {
             fileName: file.name.trim() || "unnamed_file",
             contentType: fileB64.contentType || "application/octet-stream",
@@ -344,7 +350,7 @@ function StoreManagementContent() {
             <CardHeader>
               <CardTitle>Create Product</CardTitle>
               <CardDescription>
-                Upload a digital file, optional cover image, and set a minimum price (0 for free)
+                Upload a digital file, optional cover image, and set a price. Note: Polar requires a minimum price of $0.50 USD for paid products.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -401,8 +407,16 @@ function StoreManagementContent() {
                       />
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Set to 0.00 for free products (buyers still go through Polar checkout)
+                      Set to 0.00 for free products. Minimum $0.50 for paid products.
                     </div>
+                    {isPriceBelowMinimum && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Polar requires a minimum price of $0.50 USD. Your product will be created with a $0.50 price.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 </div>
 

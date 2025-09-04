@@ -115,11 +115,11 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       }
     }
 
-    const currency = (req.currency || "USD").toUpperCase();
+    const currency = (req.currency || "USD").toLowerCase();
 
-    // Validate currency
-    if (typeof currency !== 'string' || currency.length !== 3) {
-      throw APIError.invalidArgument("currency must be a valid 3-letter currency code");
+    // Validate currency - Polar seems to only accept 'usd' in lowercase
+    if (currency !== 'usd') {
+      throw APIError.invalidArgument("currency must be 'USD' (only USD is supported by Polar)");
     }
 
     // Validate description if provided
@@ -161,7 +161,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     }
 
     try {
-      // 1) Create the product container with all required fields
+      // 1) Create the product container with properly structured prices array
       const productPayload: any = {
         name: req.title.trim(),
         organization_id: org,
@@ -169,20 +169,41 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         is_archived: false,
         // Add required recurring_interval field (even though product is not recurring)
         recurring_interval: null,
-        // Add required prices array (we'll populate this with our price)
-        prices: [
-          {
-            type: "one_time",
-            price_amount: req.priceCents,
-            price_currency: currency,
-            is_archived: false
-          }
-        ]
       };
 
       // Only add description if it exists and is not empty
       if (req.description && req.description.trim()) {
         productPayload.description = req.description.trim();
+      }
+
+      // Create the prices array with proper structure based on Polar API requirements
+      if (req.priceCents === 0) {
+        // For free products, use ProductPriceFreeCreate structure
+        productPayload.prices = [
+          {
+            type: "one_time",
+            amount_type: "free", // This is required for free products
+            is_archived: false
+          }
+        ];
+      } else {
+        // For paid products, ensure minimum price of $0.50 (50 cents) as required by Polar
+        const minPriceCents = 50;
+        const actualPriceCents = Math.max(req.priceCents, minPriceCents);
+        
+        if (req.priceCents < minPriceCents) {
+          console.warn(`Price ${req.priceCents} cents is below Polar minimum of ${minPriceCents} cents, adjusting to minimum`);
+        }
+
+        productPayload.prices = [
+          {
+            type: "one_time",
+            amount_type: "fixed", // This is required for fixed-price products
+            price_amount: actualPriceCents,
+            price_currency: currency, // Must be lowercase 'usd'
+            is_archived: false
+          }
+        ];
       }
 
       const createdProduct = await polarRequest<any>("/v1/products", {
@@ -282,6 +303,15 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       // Parse Polar API error responses more carefully
       if (error.message && error.message.includes("RequestValidationError")) {
         throw APIError.invalidArgument("Invalid request data sent to Polar. Please check all product information and try again.");
+      }
+      
+      // Check for price validation errors specifically
+      if (error.message && (
+        error.message.includes("price_amount") ||
+        error.message.includes("amount_type") ||
+        error.message.includes("price_currency")
+      )) {
+        throw APIError.invalidArgument("Price validation failed. Ensure the price is at least $0.50 USD or set to $0.00 for free products.");
       }
       
       // Otherwise, wrap it in a generic error
