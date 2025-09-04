@@ -37,7 +37,8 @@ export interface CreateProductResponse {
 export const createProduct = api<CreateProductRequest, CreateProductResponse>(
   { expose: true, method: "POST", path: "/store/products" },
   async (req) => {
-    const { org } = ensureConfigured();
+    // We still need to call ensureConfigured to validate credentials, but we won't use the org ID in the request
+    ensureConfigured();
     const polar = getPolarClient();
 
     // Validate required fields with more specific error messages
@@ -162,9 +163,9 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
 
     try {
       // 1) Create the product container with properly structured prices array
+      // NOTE: Do NOT include organizationId when using an organization token
       const productPayload: any = {
         name: req.title.trim(),
-        organizationId: org,
         isRecurring: false,
         isArchived: false,
         recurringInterval: null,

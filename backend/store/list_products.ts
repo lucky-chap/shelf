@@ -18,13 +18,14 @@ export interface ListProductsResponse {
 export const listProducts = api<void, ListProductsResponse>(
   { expose: true, method: "GET", path: "/store/products" },
   async () => {
-    const { org } = ensureConfigured();
+    // We still call ensureConfigured to validate credentials, but don't use the org ID in the request
+    ensureConfigured();
     const polar = getPolarClient();
 
     try {
-      // Use the SDK to list products
+      // Use the SDK to list products without specifying organizationId
+      // When using an organization token, the organization is automatically determined
       const res = await polar.products.list({
-        organizationId: org,
         isArchived: false,
       });
 
