@@ -17,12 +17,14 @@ async function fetchPublishableKey() {
 
 // React Query hook for fetching + caching the key
 export function useStripeKey() {
-  return useQuery({
-    queryKey: ["stripe", "publishableKey"],
-    queryFn: fetchPublishableKey,
-    retry: 3,
-    retryDelay: (attemptIndex) =>
-      Math.min(1000 * 2 ** attemptIndex, 30000), // exponential backoff
-    staleTime: 1000 * 60 * 5, // cache for 5 min
-  });
+  // return useQuery({
+  //   queryKey: ["stripe", "publishableKey"],
+  //   queryFn: fetchPublishableKey,
+  //   retry: 3,
+  //   retryDelay: (attemptIndex) =>
+  //     Math.min(1000 * 2 ** attemptIndex, 30000), // exponential backoff
+  //   staleTime: 1000 * 60 * 5, // cache for 5 min
+  // });
+	const publishableKeyFromBackend = fetchPublishableKey();
+	return publishableKeyFromBackend;
 }
