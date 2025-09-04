@@ -31,11 +31,11 @@ export interface CreateCheckoutSessionResponse {
 export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateCheckoutSessionResponse>(
   { expose: true, method: "POST", path: "/store/checkout" },
   async (req) => {
-    if (!stripeSecretKey) {
+    if (!stripeSecretKey()) {
       throw APIError.failedPrecondition("Stripe not configured (STRIPE_SECRET_KEY missing)");
     }
 
-		console.log("secret key on checkout: ", stripeSecretKey)
+		console.log("secret key on checkout: ", stripeSecretKey())
 
     // Get product details
     const product = await storeDB.queryRow<{
@@ -64,7 +64,7 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
     try {
       // Import Stripe dynamically
       const Stripe = (await import("stripe")).default;
-      const stripe = new Stripe(stripeSecretKey, {
+      const stripe = new Stripe(stripeSecretKey(), {
         apiVersion: "2023-10-16"
       });
 
