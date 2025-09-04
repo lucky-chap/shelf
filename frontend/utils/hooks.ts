@@ -12,7 +12,7 @@ async function fetchPublishableKey() {
 		// return undefined 
   // }
 
-	res.publishableKey
+	return res.publishableKey;
 }
 
 // React Query hook for fetching + caching the key
