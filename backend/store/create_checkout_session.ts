@@ -1,6 +1,8 @@
 import { api, APIError } from "encore.dev/api";
 import { storeDB } from "./db";
 
+import { stripeSecretKey } from "./config"
+
 /**
  * Reads a non-empty environment variable.
  */
@@ -29,7 +31,6 @@ export interface CreateCheckoutSessionResponse {
 export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateCheckoutSessionResponse>(
   { expose: true, method: "POST", path: "/store/checkout" },
   async (req) => {
-    const stripeSecretKey = readEnv("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {
       throw APIError.failedPrecondition("Stripe not configured (STRIPE_SECRET_KEY missing)");
     }

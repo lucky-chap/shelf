@@ -2,6 +2,8 @@ import { api, APIError } from "encore.dev/api";
 import { storeDB } from "./db";
 import { Header } from "encore.dev/api";
 
+import { stripeSecretKey, stripeWebhookSecret } from "./config"
+
 /**
  * Reads a non-empty environment variable.
  */
@@ -26,8 +28,8 @@ export interface StripeWebhookResponse {
 export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
   { expose: true, method: "POST", path: "/store/webhook" },
   async (req) => {
-    const stripeSecretKey = readEnv("STRIPE_SECRET_KEY");
-    const webhookSecret = readEnv("STRIPE_WEBHOOK_SECRET");
+    const stripeSecretKey = stripeSecretKey readEnv("STRIPE_SECRET_KEY");
+    const webhookSecret = stripeWebhookSecret;
 
     if (!webhookSecret) {
       throw APIError.failedPrecondition("Stripe webhook secret not configured");
