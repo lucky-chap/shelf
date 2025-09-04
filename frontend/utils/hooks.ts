@@ -6,7 +6,7 @@ async function fetchPublishableKey() {
   const res = await backend.site.getFrontendKeys();
   if (!res) throw new Error("Failed to fetch Stripe publishable key from backend");
 
-	console.log("publishable key in hook: ", res);
+	console.log("publishable key in hook: ", res.publishableKey);
 
   if (!res.publishableKey || typeof res.publishableKey !== "string" || !res.publishableKey.trim()) {
 	// 	return {
