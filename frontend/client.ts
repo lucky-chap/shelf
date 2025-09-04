@@ -39,7 +39,6 @@ export class Client {
     public readonly guestbook: guestbook.ServiceClient
     public readonly links: links.ServiceClient
     public readonly site: site.ServiceClient
-    public readonly store: store.ServiceClient
     public readonly users: users.ServiceClient
     private readonly options: ClientOptions
     private readonly target: string
@@ -61,7 +60,6 @@ export class Client {
         this.guestbook = new guestbook.ServiceClient(base)
         this.links = new links.ServiceClient(base)
         this.site = new site.ServiceClient(base)
-        this.store = new store.ServiceClient(base)
         this.users = new users.ServiceClient(base)
     }
 
@@ -574,65 +572,6 @@ export namespace site {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/site/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_update_config_updateConfig>
-        }
-    }
-}
-
-/**
- * Import the endpoint handlers to derive the types for the client.
- */
-import { createCheckoutUrl as api_store_create_checkout_url_createCheckoutUrl } from "~backend/store/create_checkout_url";
-import { createProduct as api_store_create_product_createProduct } from "~backend/store/create_product";
-import { isConfigured as api_store_is_configured_isConfigured } from "~backend/store/is_configured";
-import { listProducts as api_store_list_products_listProducts } from "~backend/store/list_products";
-
-export namespace store {
-
-    export class ServiceClient {
-        private baseClient: BaseClient
-
-        constructor(baseClient: BaseClient) {
-            this.baseClient = baseClient
-            this.createCheckoutUrl = this.createCheckoutUrl.bind(this)
-            this.createProduct = this.createProduct.bind(this)
-            this.isConfigured = this.isConfigured.bind(this)
-            this.listProducts = this.listProducts.bind(this)
-        }
-
-        /**
-         * Creates a checkout session with Polar and returns a redirect URL for the product.
-         */
-        public async createCheckoutUrl(params: RequestType<typeof api_store_create_checkout_url_createCheckoutUrl>): Promise<ResponseType<typeof api_store_create_checkout_url_createCheckoutUrl>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/store/checkout-url`, {method: "POST", body: JSON.stringify(params)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_create_checkout_url_createCheckoutUrl>
-        }
-
-        /**
-         * Creates a product via Polar with price and uploads (file + optional cover).
-         */
-        public async createProduct(params: RequestType<typeof api_store_create_product_createProduct>): Promise<ResponseType<typeof api_store_create_product_createProduct>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/store/products`, {method: "POST", body: JSON.stringify(params)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_create_product_createProduct>
-        }
-
-        /**
-         * Indicates whether Polar is configured. Used to toggle Store UI.
-         */
-        public async isConfigured(): Promise<ResponseType<typeof api_store_is_configured_isConfigured>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/store/config`, {method: "GET", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_is_configured_isConfigured>
-        }
-
-        /**
-         * Retrieves products from Polar for the configured organization.
-         */
-        public async listProducts(): Promise<ResponseType<typeof api_store_list_products_listProducts>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/store/products`, {method: "GET", body: undefined})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_store_list_products_listProducts>
         }
     }
 }

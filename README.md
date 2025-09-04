@@ -7,9 +7,6 @@ A simple landing page with:
 - Admin dashboard with authentication
 - Analytics for links and guestbook activity
 - Custom domain configuration with DNS setup
-- Store with Polar.sh integration for digital products
-
-Note: The old Stripe store feature has been removed and replaced with Polar.sh integration.
 
 ## Features
 
@@ -36,15 +33,6 @@ Note: The old Stripe store feature has been removed and replaced with Polar.sh i
 - Admin
   - Password-protected admin dashboard
   - No third-party auth required
-
-- Store (Polar.sh)
-  - Add products (digital files) via admin when Polar is configured
-  - Upload product file and cover image
-  - Set product title, description and minimum price (0 for free)
-  - Products are created and managed via Polar’s API
-  - Public storefront section lists products with Buy buttons
-  - Buy redirects to Polar Checkout; delivery and receipts handled by Polar
-  - Shows checkout confirmation in the UI after successful purchase
 
 ## Analytics
 
@@ -89,8 +77,6 @@ Example .env:
 
 VITE_UNSPLASH_ACCESS_KEY=your_unsplash_key
 UNSPLASH_ACCESS_KEY=your_unsplash_key
-POLAR_API_KEY=your_polar_api_key
-POLAR_ORGANIZATION_ID=org_XXXXXXXXXXXX
 
 Notes:
 - Do not hardcode keys in code. Always use environment variables.
@@ -106,13 +92,10 @@ Optional configuration:
 
 - Backend (Encore env/secrets, configured in Infrastructure tab or .env for local dev ONLY):
   - UNSPLASH_ACCESS_KEY (optional, used server-side when searching Unsplash)
-  - POLAR_API_KEY (required to enable Store)
-  - POLAR_ORGANIZATION_ID (required to scope Polar API calls)
 
 Important:
 - Never put secret keys in frontend code.
 - The Unsplash backend API validates that UNSPLASH_ACCESS_KEY is set, or returns a clear error.
-- The Store backend validates that Polar keys are configured, or returns a clear error and hides store UI.
 
 ### Unsplash Configuration
 
@@ -121,18 +104,6 @@ Important:
 
 - Frontend env:
   - VITE_UNSPLASH_ACCESS_KEY = your_unsplash_key (used for enabling the UI option)
-
-### Store (Polar.sh) Configuration
-
-- Backend env (server-side only):
-  - POLAR_API_KEY = your Polar API key
-  - POLAR_ORGANIZATION_ID = your Polar organization id
-
-- Behavior:
-  - If Polar keys are present, the Admin dashboard shows the Store tab for product management.
-  - Public site shows a Store section listing products.
-  - Checkout redirects to Polar. Delivery handled by Polar.
-  - After a successful checkout, the UI shows a purchase confirmation message.
 
 ## General Notes
 
