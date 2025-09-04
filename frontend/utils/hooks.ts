@@ -6,9 +6,9 @@ async function fetchPublishableKey() {
   const res = await backend.site.getFrontendKeys();
   if (!res) throw new Error("Failed to fetch Stripe publishable key from backend");
 
-	console.log("publishable key in hook: ", res);
+	console.log("publishable key in hook: ", publishableKey);
 
-  if (!res.stripePublishableKey || typeof res.stripePublishableKey !== "string" || !res.stripePublishableKey.trim()) {
+  if (!res.publishableKey || typeof res.publishableKey !== "string" || !res.publishableKey.trim()) {
 		return {
 		key: undefined,
 		configured: false,
@@ -17,7 +17,7 @@ async function fetchPublishableKey() {
   }
 
   return {
-		key: res.stripePublishableKey,
+		key: res.publishableKey,
 		configured: true,
 	};
 }
