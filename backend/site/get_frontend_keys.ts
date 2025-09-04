@@ -6,7 +6,7 @@ export interface GetFrontendKeysResponse {
 }
  
 // Expose a GET endpoint to fetch the key
-export const getPublishableKey = api<void, GetFrontendKeysResponse>(
+export const getFrontendKeys = api<void, GetFrontendKeysResponse>(
   { expose: true, method: "GET", path: "/stripe/publishable-key" },
   async () => {
     if (!stripePublishableKey) {
