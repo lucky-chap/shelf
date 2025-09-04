@@ -41,12 +41,8 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     ensureConfigured();
 
     // Validate required fields with more specific error messages
-    if (!req.title || typeof req.title !== 'string') {
-      throw APIError.invalidArgument("title is required and must be a string");
-    }
-    
-    if (!req.title.trim()) {
-      throw APIError.invalidArgument("title cannot be empty");
+    if (!req.title || typeof req.title !== 'string' || !req.title.trim()) {
+      throw APIError.invalidArgument("title is required and must be a non-empty string");
     }
     
     if (typeof req.priceCents !== 'number') {
@@ -69,21 +65,13 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       throw APIError.invalidArgument("productFile must be an object");
     }
     
-    if (!req.productFile.fileName || typeof req.productFile.fileName !== 'string') {
-      throw APIError.invalidArgument("productFile.fileName is required and must be a string");
+    if (!req.productFile.fileName || typeof req.productFile.fileName !== 'string' || !req.productFile.fileName.trim()) {
+      throw APIError.invalidArgument("productFile.fileName is required and must be a non-empty string");
     }
     
-    if (!req.productFile.fileName.trim()) {
-      throw APIError.invalidArgument("productFile.fileName cannot be empty");
+    if (!req.productFile.base64Data || typeof req.productFile.base64Data !== 'string' || !req.productFile.base64Data.trim()) {
+      throw APIError.invalidArgument("productFile.base64Data is required and must be a non-empty string");
     }
-    
-    if (!req.productFile.base64Data || typeof req.productFile.base64Data !== 'string') {
-      throw APIError.invalidArgument("productFile.base64Data is required and must be a string");
-    }
-    
-     if (!req.productFile.base64Data.trim()) {
-       throw APIError.invalidArgument("productFile.base64Data cannot be empty");
-     }
     
     if (!req.productFile.contentType || typeof req.productFile.contentType !== 'string') {
       throw APIError.invalidArgument("productFile.contentType is required and must be a string");
@@ -95,24 +83,16 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         throw APIError.invalidArgument("coverImage must be an object when provided");
       }
       
-      if (!req.coverImage.fileName || typeof req.coverImage.fileName !== 'string') {
-        throw APIError.invalidArgument("coverImage.fileName is required when coverImage is provided");
+      if (!req.coverImage.fileName || typeof req.coverImage.fileName !== 'string' || !req.coverImage.fileName.trim()) {
+        throw APIError.invalidArgument("coverImage.fileName is required and must be a non-empty string when coverImage is provided");
       }
       
-      if (!req.coverImage.fileName.trim()) {
-        throw APIError.invalidArgument("coverImage.fileName cannot be empty when coverImage is provided");
-      }
-      
-      if (!req.coverImage.base64Data || typeof req.coverImage.base64Data !== 'string') {
-        throw APIError.invalidArgument("coverImage.base64Data is required when coverImage is provided");
-      }
-      
-      if (!req.coverImage.base64Data.trim()) {
-        throw APIError.invalidArgument("coverImage.base64Data cannot be empty when coverImage is provided");
+      if (!req.coverImage.base64Data || typeof req.coverImage.base64Data !== 'string' || !req.coverImage.base64Data.trim()) {
+        throw APIError.invalidArgument("coverImage.base64Data is required and must be a non-empty string when coverImage is provided");
       }
       
       if (!req.coverImage.contentType || typeof req.coverImage.contentType !== 'string') {
-        throw APIError.invalidArgument("coverImage.contentType is required when coverImage is provided");
+        throw APIError.invalidArgument("coverImage.contentType is required and must be a string when coverImage is provided");
       }
     }
 
@@ -124,7 +104,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     }
 
     // Validate description if provided
-    if (req.description !== undefined && req.description !== null && typeof req.description !== 'string') {
+    if (req.description !== undefined && req.description !== null && (typeof req.description !== 'string')) {
       throw APIError.invalidArgument("description must be a string when provided");
     }
 
@@ -171,7 +151,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       };
 
       // Only add description if it exists and is not empty
-      if (req.description && req.description.trim()) {
+      if (req.description && typeof req.description === 'string' && req.description.trim()) {
         productPayload.description = req.description.trim();
       }
 
