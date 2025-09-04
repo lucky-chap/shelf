@@ -4,3 +4,6 @@ encore.gen.cue
 /.encore
 node_modules
 /encore.gen
+.env
+.env.local
+.env.development
