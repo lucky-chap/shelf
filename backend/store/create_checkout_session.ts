@@ -1,5 +1,4 @@
 import { api, APIError } from "encore.dev/api";
-import { secret } from "encore.dev/config";
 import { storeDB } from "./db";
 
 /**
@@ -30,7 +29,7 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
   { expose: true, method: "POST", path: "/store/checkout" },
   async (req) => {
     const stripeSecretKey = readEnv("STRIPE_SECRET_KEY");
-    if (!secret(STRIPE_SECRET_KEY)) {
+    if (!stripeSecretKey) {
       throw APIError.failedPrecondition("Stripe not configured (STRIPE_SECRET_KEY missing)");
     }
 
