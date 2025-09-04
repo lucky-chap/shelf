@@ -54,16 +54,16 @@ export const downloadProduct = api<DownloadProductRequest, DownloadProductRespon
       }
 
       // Check if there's a valid purchase for this session and product
-      // const purchase = await storeDB.queryRow<{ id: number }>`
-      //   SELECT id 
-      //   FROM purchases 
-      //   WHERE stripe_session_id = ${req.sessionId} 
-      //     AND product_id = ${req.productId}
-      // `;
+      const purchase = await storeDB.queryRow<{ id: number }>`
+        SELECT id 
+        FROM purchases 
+        WHERE stripe_session_id = ${req.sessionId} 
+          AND product_id = ${req.productId}
+      `;
 
-      // if (!purchase) {
-      //   throw APIError.permissionDenied("valid purchase required for download");
-      // }
+      if (!purchase) {
+        throw APIError.permissionDenied("valid purchase required for download");
+      }
 
       // Update download count for the purchase
       await storeDB.exec`
