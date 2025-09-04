@@ -21,5 +21,5 @@ export const isUnsplashConfigured = () => {
 // Check if Stripe is configured
 export const isStripeConfigured = () => {
 	console.log("publishable key state: ", envStripePublishableKey)
-  return typeof STRIPE_PUBLISHABLE_KEY === "string" && STRIPE_PUBLISHABLE_KEY.trim().length > 0;
+  return typeof envStripePublishableKey === "string" && envStripePublishableKey.trim().length > 0;
 };
