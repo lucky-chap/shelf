@@ -7,10 +7,17 @@ async function fetchPublishableKey() {
   if (!res) throw new Error("Failed to fetch Stripe publishable key from backend");
 
   if (!res.stripePublishableKey || typeof res.stripePublishableKey !== "string" || !res.stripePublishableKey.trim()) {
-    throw new Error("Stripe publishable key is missing or invalid");
+		return {
+		key: undefined,
+		configured: false,
+	};
+    // throw new Error("Stripe publishable key is missing or invalid");
   }
 
-  return res.key;
+  return {
+		key: res.stripePublishableKey,
+		configured: true,
+	};
 }
 
 // React Query hook for fetching + caching the key
