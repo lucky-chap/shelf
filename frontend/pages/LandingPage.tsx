@@ -19,7 +19,7 @@ import backend from "~backend/client";
 
 function LandingPageContent() {
 	const {data, isLoading, isError} = useStripeKey()
-	console.log("data: ", isError)
+	console.log("data: ", data)
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
