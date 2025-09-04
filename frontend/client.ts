@@ -545,6 +545,7 @@ export namespace links {
  * Import the endpoint handlers to derive the types for the client.
  */
 import { getConfig as api_site_get_config_getConfig } from "~backend/site/get_config";
+import { getPublishableKey as api_site_get_frontend_keys_getPublishableKey } from "~backend/site/get_frontend_keys";
 import { updateConfig as api_site_update_config_updateConfig } from "~backend/site/update_config";
 
 export namespace site {
@@ -555,6 +556,7 @@ export namespace site {
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
             this.getConfig = this.getConfig.bind(this)
+            this.getPublishableKey = this.getPublishableKey.bind(this)
             this.updateConfig = this.updateConfig.bind(this)
         }
 
@@ -565,6 +567,15 @@ export namespace site {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/site/config`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_get_config_getConfig>
+        }
+
+        /**
+         * Expose a GET endpoint to fetch the key
+         */
+        public async getPublishableKey(): Promise<ResponseType<typeof api_site_get_frontend_keys_getPublishableKey>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/stripe/publishable-key`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_site_get_frontend_keys_getPublishableKey>
         }
 
         /**
