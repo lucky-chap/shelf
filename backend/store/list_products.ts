@@ -1,4 +1,4 @@
-import { api } from "encore.dev/api";
+import { api, APIError } from "encore.dev/api";
 import { ensureConfigured, mapPolarProduct, getPolarClient } from "./polar";
 
 export interface ListProductsResponse {
@@ -18,38 +18,79 @@ export interface ListProductsResponse {
 export const listProducts = api<void, ListProductsResponse>(
   { expose: true, method: "GET", path: "/store/products" },
   async () => {
-    // We still call ensureConfigured to validate credentials, but don't use the org ID in the request
     ensureConfigured();
     const polar = getPolarClient();
 
     try {
-      // Use the SDK to list products without specifying organizationId
-      // When using an organization token, the organization is automatically determined
-      const res = await polar.products.list({
-        isArchived: false,
-      });
+      let products: any[] = [];
 
-      // The SDK should return the products directly
-      const products = res.items || res.result || [];
+      // Try SDK method first
+      if (polar.products && polar.products.list) {
+        try {
+          const res = await polar.products.list({
+            isArchived: false,
+          });
+          
+          // The SDK should return the products directly
+          products = res.items || res.result || res.data || [];
+        } catch (sdkError: any) {
+          console.warn("SDK products list failed, trying direct API:", sdkError);
+          
+          // Fall back to direct API call
+          const { key } = ensureConfigured();
+          const response = await fetch("https://api.polar.sh/v1/products/?is_archived=false", {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${key}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Polar list products API error ${response.status}: ${errorText}`);
+          }
+
+          const data = await response.json();
+          products = data.items || data.result || data.data || [];
+        }
+      } else {
+        // SDK doesn't have the expected structure, use direct API
+        const { key } = ensureConfigured();
+        const response = await fetch("https://api.polar.sh/v1/products/?is_archived=false", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${key}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Polar list products API error ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        products = data.items || data.result || data.data || [];
+      }
+
       const mappedProducts = products.map(mapPolarProduct);
 
       return { products: mappedProducts };
     } catch (error: any) {
       console.error("List products error:", error);
       
-      if (error.statusCode === 401) {
-        throw new Error("Invalid Polar API key");
+      if (error.message && error.message.includes("401")) {
+        throw APIError.unauthenticated("Invalid Polar API key");
       }
       
-      if (error.statusCode === 403) {
-        throw new Error("Insufficient permissions for Polar API");
+      if (error.message && error.message.includes("403")) {
+        throw APIError.permissionDenied("Insufficient permissions for Polar API");
       }
       
-      if (error.statusCode === 404) {
-        throw new Error("Polar organization not found");
+      if (error.message && error.message.includes("404")) {
+        throw APIError.notFound("Polar organization not found");
       }
       
-      throw new Error(`Failed to list products: ${error.message || 'Unknown error'}`);
+      throw APIError.internal(`Failed to list products: ${error.message || 'Unknown error'}`);
     }
   }
 );

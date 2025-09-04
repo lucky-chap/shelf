@@ -24,12 +24,64 @@ export const createCheckoutUrl = api<CreateCheckoutUrlRequest, CreateCheckoutUrl
     }
 
     try {
-      // Use the SDK to create a checkout session
-      const checkoutSession = await polar.checkouts.create({
-        productId: productId,
-        successUrl: successUrl,
-        cancelUrl: cancelUrl,
-      });
+      let checkoutSession: any;
+
+      // Try SDK method first
+      if (polar.checkouts && polar.checkouts.create) {
+        try {
+          checkoutSession = await polar.checkouts.create({
+            productId: productId,
+            successUrl: successUrl,
+            cancelUrl: cancelUrl,
+          });
+        } catch (sdkError: any) {
+          console.warn("SDK checkout creation failed, trying direct API:", sdkError);
+          
+          // Fall back to direct API call
+          const { key } = ensureConfigured();
+          const payload: any = { product_id: productId };
+          if (successUrl) payload.success_url = successUrl;
+          if (cancelUrl) payload.cancel_url = cancelUrl;
+
+          const response = await fetch("https://api.polar.sh/v1/checkouts/", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${key}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Polar checkout API error ${response.status}: ${errorText}`);
+          }
+
+          checkoutSession = await response.json();
+        }
+      } else {
+        // SDK doesn't have the expected structure, use direct API
+        const { key } = ensureConfigured();
+        const payload: any = { product_id: productId };
+        if (successUrl) payload.success_url = successUrl;
+        if (cancelUrl) payload.cancel_url = cancelUrl;
+
+        const response = await fetch("https://api.polar.sh/v1/checkouts/", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Polar checkout API error ${response.status}: ${errorText}`);
+        }
+
+        checkoutSession = await response.json();
+      }
 
       const url: string = checkoutSession.url;
       if (!url) {
@@ -40,19 +92,19 @@ export const createCheckoutUrl = api<CreateCheckoutUrlRequest, CreateCheckoutUrl
     } catch (error: any) {
       console.error("Create checkout error:", error);
       
-      if (error.statusCode === 401) {
+      if (error.message && error.message.includes("401")) {
         throw APIError.unauthenticated("Invalid Polar API key");
       }
       
-      if (error.statusCode === 403) {
+      if (error.message && error.message.includes("403")) {
         throw APIError.permissionDenied("Insufficient permissions for Polar API");
       }
       
-      if (error.statusCode === 404) {
+      if (error.message && error.message.includes("404")) {
         throw APIError.notFound("Product not found");
       }
       
-      if (error.statusCode === 422) {
+      if (error.message && error.message.includes("422")) {
         throw APIError.invalidArgument("Invalid checkout data");
       }
       

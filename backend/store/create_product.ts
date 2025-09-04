@@ -1,5 +1,5 @@
 import { api, APIError } from "encore.dev/api";
-import { ensureConfigured, getPolarClient, mapPolarProduct, uploadFile, uploadMedia } from "./polar";
+import { ensureConfigured, mapPolarProduct, uploadFile, uploadMedia, createProduct, createBenefit, getProduct } from "./polar";
 
 export interface CreateProductFile {
   fileName: string;
@@ -37,9 +37,8 @@ export interface CreateProductResponse {
 export const createProduct = api<CreateProductRequest, CreateProductResponse>(
   { expose: true, method: "POST", path: "/store/products" },
   async (req) => {
-    // We still need to call ensureConfigured to validate credentials, but we won't use the org ID in the request
+    // Ensure Polar is configured
     ensureConfigured();
-    const polar = getPolarClient();
 
     // Validate required fields with more specific error messages
     if (!req.title || typeof req.title !== 'string') {
@@ -163,7 +162,6 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
 
     try {
       // 1) Create the product container with properly structured prices array
-      // NOTE: Do NOT include organizationId when using an organization token
       const productPayload: any = {
         name: req.title.trim(),
         isRecurring: false,
@@ -207,7 +205,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         ];
       }
 
-      const createdProduct = await polar.products.create(productPayload);
+      const createdProduct = await createProduct(productPayload);
 
       const productId: string = createdProduct.id;
       if (!productId) {
@@ -215,14 +213,13 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       }
 
       // 2) Create benefit for downloadable files
-      await polar.products.benefits.create({
-        productId: productId,
+      await createBenefit(productId, {
         type: "downloadables",
         description: "Digital download",
         isTaxApplicable: false,
       });
 
-      // 3) Upload product file using SDK
+      // 3) Upload product file
       try {
         let cleanBase64 = req.productFile.base64Data.trim();
         if (cleanBase64.includes(',')) {
@@ -268,7 +265,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       }
 
       // 5) Fetch fresh product details to return mapped fields back to the client
-      const fetched = await polar.products.get({ id: productId });
+      const fetched = await getProduct(productId);
       const mapped = mapPolarProduct(fetched);
 
       return { product: mapped };
@@ -280,20 +277,20 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         throw error;
       }
       
-      // Parse Polar SDK error responses
-      if (error.statusCode === 422) {
+      // Parse error responses
+      if (error.message && error.message.includes("422")) {
         throw APIError.invalidArgument("Invalid request data sent to Polar. Please check all product information and try again.");
       }
       
-      if (error.statusCode === 401) {
+      if (error.message && error.message.includes("401")) {
         throw APIError.unauthenticated("Invalid Polar API key");
       }
       
-      if (error.statusCode === 403) {
+      if (error.message && error.message.includes("403")) {
         throw APIError.permissionDenied("Insufficient permissions for Polar API");
       }
       
-      if (error.statusCode === 404) {
+      if (error.message && error.message.includes("404")) {
         throw APIError.notFound("Polar organization not found");
       }
       
