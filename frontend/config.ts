@@ -6,7 +6,8 @@
 const envUnsplashKey = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 // Stripe publishable key (required for digital store checkout)
-const envStripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+// const envStripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const envStripePublishableKey = "pk_test_51S2Y3iPUkb8apElmzxlSimxk46JIhVgilAsO9SjUMftq5CMI1sZJf6OPXfEue4GrBqChFHwr7xyEzRw9b1jJfSs100oqz5cbmS";
 
 // Exported values for use in the app
 export const UNSPLASH_ACCESS_KEY = envUnsplashKey;
