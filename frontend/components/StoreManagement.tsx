@@ -96,9 +96,19 @@ function StoreManagementContent() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priceCents, setPriceCents] = useState<number>(0);
+  const [priceInput, setPriceInput] = useState("0.00"); // Keep price as string for input
   const [file, setFile] = useState<File | null>(null);
   const [cover, setCover] = useState<File | null>(null);
+
+  // Convert price input to cents as integer
+  const priceCents = useMemo(() => {
+    const dollars = parseFloat(priceInput || "0");
+    if (isNaN(dollars) || dollars < 0) {
+      return 0;
+    }
+    // Use Math.round to ensure we get an integer and handle floating point precision
+    return Math.round(dollars * 100);
+  }, [priceInput]);
 
   const isDisabled = useMemo(() => {
     return !file || priceCents < 0 || !Number.isInteger(priceCents);
@@ -135,7 +145,7 @@ function StoreManagementContent() {
 
         // Prepare the base payload structure
         const payload: any = {
-          priceCents: priceCents,
+          priceCents: priceCents, // This is now guaranteed to be an integer
           currency: "USD", // Polar only supports USD
           productFile: {
             fileName: file.name.trim() || "unnamed_file",
@@ -182,6 +192,10 @@ function StoreManagementContent() {
           throw new Error("Invalid price");
         }
         
+        if (!Number.isInteger(payload.priceCents)) {
+          throw new Error("Price must be an integer");
+        }
+        
         if (!payload.productFile || 
             !payload.productFile.fileName || 
             !payload.productFile.base64Data || 
@@ -202,7 +216,7 @@ function StoreManagementContent() {
       });
       setTitle("");
       setDescription("");
-      setPriceCents(0);
+      setPriceInput("0.00");
       setFile(null);
       setCover(null);
       qc.invalidateQueries({ queryKey: ["store", "products"] });
@@ -240,19 +254,27 @@ function StoreManagementContent() {
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setPriceCents(0);
+    setPriceInput("0.00");
     setFile(null);
     setCover(null);
   };
 
   const handlePriceChange = (value: string) => {
-    const dollars = parseFloat(value || "0");
-    if (isNaN(dollars) || dollars < 0) {
-      setPriceCents(0);
-    } else {
-      const cents = Math.round(dollars * 100);
-      setPriceCents(cents);
+    // Allow only valid price formats
+    const cleanValue = value.replace(/[^0-9.]/g, '');
+    
+    // Prevent multiple decimal points
+    const parts = cleanValue.split('.');
+    if (parts.length > 2) {
+      return;
     }
+    
+    // Limit to 2 decimal places
+    if (parts[1] && parts[1].length > 2) {
+      return;
+    }
+    
+    setPriceInput(cleanValue);
   };
 
   if (!configQuery.data?.enabled) {
@@ -392,16 +414,15 @@ function StoreManagementContent() {
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <Input
                         id="price"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={(priceCents / 100).toFixed(2)}
+                        value={priceInput}
                         onChange={(e) => handlePriceChange(e.target.value)}
                         placeholder="0.00"
                       />
                     </div>
                     <div className="text-xs text-muted-foreground">
                       Set to 0.00 for free products. Minimum $0.50 for paid products.
+                      <br />
+                      Price in cents: {priceCents}
                     </div>
                     {isPriceBelowMinimum && (
                       <Alert>
