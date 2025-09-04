@@ -34,8 +34,6 @@ export interface CreateProductResponse {
 }
 
 // Creates a product via Polar with price and uploads (file + optional cover).
-// Note: This uses a best-effort call sequence based on Polar's public API shape.
-// If Polar rejects upload endpoints, a clear error is returned.
 export const createProduct = api<CreateProductRequest, CreateProductResponse>(
   { expose: true, method: "POST", path: "/store/products" },
   async (req) => {
@@ -209,7 +207,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         });
       }
 
-      // 3) Upload product file (multipart). Endpoint may differ; we try a generic route:
+      // 3) Upload product file using improved multipart upload
       try {
         // Process base64 data
         let cleanBase64 = req.productFile.base64Data.trim();
@@ -236,7 +234,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         );
       }
 
-      // 4) Optional: upload cover image
+      // 4) Optional: upload cover image using improved multipart upload
       if (req.coverImage?.fileName && req.coverImage?.base64Data) {
         try {
           // Process base64 data

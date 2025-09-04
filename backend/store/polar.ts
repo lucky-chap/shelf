@@ -70,9 +70,7 @@ export async function polarRequest<T>(
   return (await resp.json()) as T;
 }
 
-// Utility to upload base64 content to Polar if their API supports uploads via
-// a dedicated endpoint. This implementation attempts a generic multipart fallback.
-// If unsupported, the backend returns a clear error. Kept separate for clarity.
+// Improved multipart upload using proper FormData construction
 export async function polarMultipartUpload(
   path: string,
   fields: Record<string, string>,
@@ -80,38 +78,26 @@ export async function polarMultipartUpload(
 ): Promise<any> {
   const { key } = ensureConfigured();
 
-  // Construct multipart/form-data body manually (without external deps).
-  const boundary = `----polarform${Math.random().toString(36).slice(2)}`;
-  const lines: Buffer[] = [];
+  // Create a proper FormData object
+  const formData = new FormData();
 
-  // Append fields
+  // Add regular fields
   for (const [k, v] of Object.entries(fields)) {
-    lines.push(
-      Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`
-      )
-    );
+    formData.append(k, v);
   }
 
-  // Append file
-  lines.push(
-    Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${file.fileName}"\r\nContent-Type: ${file.contentType}\r\n\r\n`
-    )
-  );
-  lines.push(file.data);
-  lines.push(Buffer.from(`\r\n--${boundary}--\r\n`));
-
-  const body = Buffer.concat(lines);
+  // Add the file as a Blob
+  const blob = new Blob([file.data], { type: file.contentType });
+  formData.append("file", blob, file.fileName);
 
   const resp = await fetch(`https://api.polar.sh${path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
-      "Content-Type": `multipart/form-data; boundary=${boundary}`,
       Accept: "application/json",
+      // Don't set Content-Type, let the browser set it with the boundary
     },
-    body,
+    body: formData,
   });
 
   if (!resp.ok) {

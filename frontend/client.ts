@@ -610,8 +610,6 @@ export namespace store {
 
         /**
          * Creates a product via Polar with price and uploads (file + optional cover).
-         * Note: This uses a best-effort call sequence based on Polar's public API shape.
-         * If Polar rejects upload endpoints, a clear error is returned.
          */
         public async createProduct(params: RequestType<typeof api_store_create_product_createProduct>): Promise<ResponseType<typeof api_store_create_product_createProduct>> {
             // Now make the actual call to the API
