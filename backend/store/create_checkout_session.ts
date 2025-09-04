@@ -31,7 +31,7 @@ export interface CreateCheckoutSessionResponse {
 export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateCheckoutSessionResponse>(
   { expose: true, method: "POST", path: "/store/checkout" },
   async (req) => {
-    if (!stripeSecretKey) {
+    if (stripeSecretKey) {
       throw APIError.failedPrecondition("Stripe not configured (STRIPE_SECRET_KEY missing)");
     }
 
