@@ -15,8 +15,12 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
 import backend from "~backend/client";
+	import { useStripeKey } from "../utils/hooks"
 
 function LandingPageContent() {
+	const { key, configured } = useStripeKey()
+	console.log("Key: ", key)
+	console.log("configured: ", configured)
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
