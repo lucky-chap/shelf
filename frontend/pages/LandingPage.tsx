@@ -4,11 +4,12 @@ import { Helmet } from "react-helmet-async";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings } from "lucide-react";
+import { Settings, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
 import SocialShare from "../components/SocialShare";
+import ProductsSection from "../components/ProductsSection";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
@@ -190,7 +191,18 @@ function LandingPageContent() {
         <div className="max-w-2xl mx-auto px-4 py-8">
           <div className="space-y-8">
             {/* Header with Admin Access */}
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between mb-4">
+              <Link to="/store">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
+                  style={getButtonStyles()}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Store
+                </Button>
+              </Link>
               <Link to="/admin">
                 <Button 
                   variant="outline" 
@@ -234,6 +246,10 @@ function LandingPageContent() {
               <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>
                 <LinksList />
               </div>
+            </ErrorBoundary>
+
+            <ErrorBoundary>
+              <ProductsSection />
             </ErrorBoundary>
 
             <ErrorBoundary>

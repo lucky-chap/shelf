@@ -3,6 +3,7 @@
 A simple landing page with:
 - Public landing page with custom theme
 - Links list with click tracking
+- Digital store with Stripe integration
 - Guestbook with moderation
 - Admin dashboard with authentication
 - Analytics for links and guestbook activity
@@ -14,6 +15,14 @@ A simple landing page with:
   - Create, update, delete, and reorder links (drag-and-drop)
   - Click tracking and analytics
   - Link scheduling for time-limited promotions
+
+- Digital Store
+  - Create and manage digital downloadable products
+  - Upload files and cover images to Encore storage
+  - Support for free (price $0) and paid products ($1+)
+  - Stripe Checkout integration for paid items
+  - Instant downloads for free products
+  - Secure download links after purchase
 
 - Guestbook
   - Public submissions with moderation
@@ -39,10 +48,35 @@ A simple landing page with:
 The analytics view includes:
 - Total link clicks
 - Total guest messages and pending moderation count
+- Product sales and revenue
 - Top performing links
 - Recent guestbook activity
 - Visitor analytics with device and location breakdown
 - Link-specific heatmaps and click patterns
+
+## Digital Store Setup
+
+To enable the digital store functionality:
+
+1. **Stripe Configuration**: Create a Stripe account and get your API keys
+2. **Environment Variables**: Configure the required Stripe environment variables
+3. **Product Management**: Create digital products through the admin dashboard
+4. **File Storage**: Upload digital files and cover images (stored securely in Encore)
+
+### Required Environment Variables
+
+- Frontend (Vite env, in .env):
+  - `VITE_STRIPE_PUBLISHABLE_KEY` (required for Stripe Checkout)
+
+- Backend (Encore env/secrets, configured in Infrastructure tab or .env for local dev ONLY):
+  - `STRIPE_SECRET_KEY` (required for processing payments)
+  - `STRIPE_WEBHOOK_SECRET` (required for webhook validation)
+
+### Stripe Webhook Configuration
+
+Configure a webhook endpoint in your Stripe dashboard:
+- URL: `https://your-domain.com/store/webhook`
+- Events: `checkout.session.completed`
 
 ## Custom Domain Setup
 
@@ -76,7 +110,10 @@ Create a .env file in the project root by copying .env.example and filling in yo
 Example .env:
 
 VITE_UNSPLASH_ACCESS_KEY=your_unsplash_key
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 UNSPLASH_ACCESS_KEY=your_unsplash_key
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
 
 Notes:
 - Do not hardcode keys in code. Always use environment variables.
