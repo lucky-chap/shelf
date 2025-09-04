@@ -13,7 +13,7 @@ async function fetchPublishableKey() {
 	// 	key: undefined,
 	// 	configured: false,
 	// };
-		return undefined
+		return undefined 
     // throw new Error("Stripe publishable key is missing or invalid");
   }
 
