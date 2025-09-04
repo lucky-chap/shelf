@@ -9,17 +9,19 @@ async function fetchPublishableKey() {
 	console.log("publishable key in hook: ", publishableKey);
 
   if (!res.publishableKey || typeof res.publishableKey !== "string" || !res.publishableKey.trim()) {
-		return {
-		key: undefined,
-		configured: false,
-	};
+	// 	return {
+	// 	key: undefined,
+	// 	configured: false,
+	// };
+		return undefined
     // throw new Error("Stripe publishable key is missing or invalid");
   }
 
-  return {
-		key: res.publishableKey,
-		configured: true,
-	};
+ //  return {
+	// 	key: res.publishableKey,
+	// 	configured: true,
+	// };
+	res.publishableKey
 }
 
 // React Query hook for fetching + caching the key
