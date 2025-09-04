@@ -13,6 +13,6 @@ export const getFrontendKeys = api<void, GetFrontendKeysResponse>(
     if (!stripePublishableKey()) {
       throw new Error("Stripe publishable key is not configured");
     }
-    return { stripePublishableKey() };
+    return stripePublishableKey() ;
   }
 );
