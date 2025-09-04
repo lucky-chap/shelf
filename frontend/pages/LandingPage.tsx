@@ -18,8 +18,8 @@ import backend from "~backend/client";
 	import { useStripeKey } from "../utils/hooks"
 
 function LandingPageContent() {
-	const data = useStripeKey()
-	console.log("data: ", data)
+	// const data = useStripeKey()
+	console.log("data: ", useStripeKey())
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
