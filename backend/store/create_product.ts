@@ -46,9 +46,9 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
       : "Untitled";
 
     // Validate required fields with more specific error messages
-    if (typeof req.priceCents !== 'number') {
-      throw APIError.invalidArgument("priceCents must be a number");
-    }
+    // if (typeof req.priceCents !== 'number') {
+    //   throw APIError.invalidArgument("priceCents must be a number");
+    // }
     
     if (req.priceCents < 0) {
       throw APIError.invalidArgument("priceCents cannot be negative");
