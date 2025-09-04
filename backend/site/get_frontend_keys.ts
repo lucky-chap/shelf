@@ -2,7 +2,7 @@ import { api } from "encore.dev/api";
 import { stripePublishableKey } from "../store/config"
 
 export interface GetFrontendKeysResponse {
-  stripePublishableKey: string;
+  publishableKey: string;
 }
  
 // Expose a GET endpoint to fetch the key
