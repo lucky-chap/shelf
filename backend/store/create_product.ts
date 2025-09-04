@@ -161,13 +161,23 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
     }
 
     try {
-      // 1) Create the product container with minimal required fields
-      // Use the exact field names Polar expects
-      const productPayload = {
+      // 1) Create the product container with all required fields
+      const productPayload: any = {
         name: req.title.trim(),
         organization_id: org,
         is_recurring: false,
-        is_archived: false
+        is_archived: false,
+        // Add required recurring_interval field (even though product is not recurring)
+        recurring_interval: null,
+        // Add required prices array (we'll populate this with our price)
+        prices: [
+          {
+            type: "one_time",
+            price_amount: req.priceCents,
+            price_currency: currency,
+            is_archived: false
+          }
+        ]
       };
 
       // Only add description if it exists and is not empty
@@ -185,22 +195,7 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
         throw APIError.internal("Polar did not return a product id");
       }
 
-      // 2) Create price based on whether it's free or paid
-      const pricePayload: any = {
-        product_id: productId,
-        price_currency: currency,
-      };
-
-      if (req.priceCents === 0) {
-        // For free products, use a one-time price with amount 0
-        pricePayload.type = "one_time";
-        pricePayload.price_amount = 0;
-      } else {
-        // For paid products, create a one-time price with the specified amount
-        pricePayload.type = "one_time";
-        pricePayload.price_amount = req.priceCents;
-      }
-
+      // 2) Create benefit for downloadable files
       await polarRequest<any>("/v1/products/benefits", {
         method: "POST",
         body: JSON.stringify({
@@ -209,12 +204,6 @@ export const createProduct = api<CreateProductRequest, CreateProductResponse>(
           description: "Digital download",
           is_tax_applicable: false,
         }),
-      });
-
-      // Create the price
-      await polarRequest<any>("/v1/products/prices", {
-        method: "POST",
-        body: JSON.stringify(pricePayload),
       });
 
       // 3) Upload product file using improved multipart upload
