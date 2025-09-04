@@ -139,7 +139,7 @@ function StoreManagementContent() {
 
         // Prepare the base payload structure
         const payload: any = {
-          title: title.trim(),
+          title: title,
           priceCents: priceCents,
           currency: "USD", // Polar only supports USD
           productFile: {
