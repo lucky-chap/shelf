@@ -92,15 +92,32 @@ function CheckoutSuccessPageContent() {
     },
   });
 
-  const handleDownloadClick = () => {
-    if (downloadData) {
-      window.open(downloadData.url, '_blank');
-      toast({
-        title: "Download Started",
-        description: "Your download should begin shortly.",
-      });
-    }
-  };
+  // const handleDownloadClick = () => {
+  //   if (downloadData) {
+  //     window.open(downloadData.url, '_blank');
+  //     toast({
+  //       title: "Download Started",
+  //       description: "Your download should begin shortly.",
+  //     });
+  //   }
+  // };
+
+	const handleDownloadClick = () => {
+	  if (downloadData) {
+	    const link = document.createElement("a");
+	    link.href = downloadData.url;
+	    link.setAttribute("download", downloadData.fileName); // You can set a filename here
+	    document.body.appendChild(link);
+	    link.click();
+	    document.body.removeChild(link);
+	
+	    toast({
+	      title: "Download Started",
+	      description: "Your download should begin shortly.",
+	    });
+	  }
+};
+
 
   const handleGetDownload = () => {
     setRetryCount(0); // Reset retry count for manual attempts
