@@ -21,7 +21,7 @@ function CheckoutSuccessPageContent() {
   const [searchParams] = useSearchParams();
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadData, setDownloadData] = useState<{
-    url: string;
+    downloadUrl: string;
     fileName: string;
     expiresIn: number;
   } | null>(null);
@@ -104,10 +104,10 @@ function CheckoutSuccessPageContent() {
 
 	const handleDownloadClick = () => {
 	  if (downloadData) {
-			console.log("URL for download: ", downloadData.url)
+			console.log("URL for download: ", downloadData.downloadUrl)
 	    const link = document.createElement("a");
-	    link.href = downloadData.url;
-	    link.setAttribute("download", downloadData.fileName); // You can set a filename here
+	    link.href = downloadData.downloadUrl;
+	    link.setAttribute("download", downloadData.fileName);
 	    document.body.appendChild(link);
 	    link.click();
 	    document.body.removeChild(link);
