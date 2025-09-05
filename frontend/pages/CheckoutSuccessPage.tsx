@@ -92,31 +92,31 @@ function CheckoutSuccessPageContent() {
     },
   });
 
-  // const handleDownloadClick = () => {
-  //   if (downloadData) {
-  //     window.open(downloadData.url, '_blank');
-  //     toast({
-  //       title: "Download Started",
-  //       description: "Your download should begin shortly.",
-  //     });
-  //   }
-  // };
+  const handleDownloadClick = () => {
+    if (downloadData) {
+      window.open(downloadData.downloadUrl, '_blank');
+      toast({
+        title: "Download Started",
+        description: "Your download should begin shortly.",
+      });
+    }
+  };
 
-	const handleDownloadClick = () => {
-	  if (downloadData) {
-	    const link = document.createElement("a");
-	    link.href = downloadData.downloadUrl;
-	    link.setAttribute("download", downloadData.fileName);
-	    document.body.appendChild(link);
-	    link.click();
-	    document.body.removeChild(link);
+// 	const handleDownloadClick = () => {
+// 	  if (downloadData) {
+// 	    const link = document.createElement("a");
+// 	    link.href = downloadData.downloadUrl;
+// 	    link.setAttribute("download", downloadData.fileName);
+// 	    document.body.appendChild(link);
+// 	    link.click();
+// 	    document.body.removeChild(link);
 	
-	    toast({
-	      title: "Download Started",
-	      description: "Your download should begin shortly.",
-	    });
-	  }
-};
+// 	    toast({
+// 	      title: "Download Started",
+// 	      description: "Your download should begin shortly.",
+// 	    });
+// 	  }
+// };
 
 
   const handleGetDownload = () => {
