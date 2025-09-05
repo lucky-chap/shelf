@@ -46,9 +46,17 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
         webhookSecret
       );
 
+      console.log("Processing Stripe webhook event:", event.type, "ID:", event.id);
+
       // Handle the checkout session completed event
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as any;
+        
+        console.log("Processing checkout session:", session.id);
+        console.log("Session metadata:", session.metadata);
+        console.log("Session customer details:", session.customer_details);
+        console.log("Session amount total:", session.amount_total);
+        console.log("Session payment intent:", session.payment_intent);
         
         // Extract product ID from metadata
         const productId = parseInt(session.metadata?.productId);
@@ -69,7 +77,18 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
           return { received: true };
         }
 
-        console.log("Recording purchase for session:", session.id, "product:", productId);
+        console.log("Recording purchase for session:", session.id, "product:", productId, "title:", product.title);
+
+        // Check if purchase already exists to avoid duplicates
+        const existingPurchase = await storeDB.queryRow<{ id: number }>`
+          SELECT id FROM purchases 
+          WHERE stripe_session_id = ${session.id} AND product_id = ${productId}
+        `;
+
+        if (existingPurchase) {
+          console.log("Purchase already exists for session:", session.id);
+          return { received: true };
+        }
 
         // Record the purchase
         await storeDB.exec`
@@ -79,22 +98,35 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
             stripe_payment_intent_id,
             customer_email,
             amount_paid_cents,
-            purchase_date
+            purchase_date,
+            download_count,
+            last_downloaded_at
           ) VALUES (
             ${productId},
             ${session.id},
             ${session.payment_intent || null},
             ${session.customer_details?.email || session.customer_email || null},
             ${session.amount_total || product.priceCents},
-            NOW()
+            NOW(),
+            0,
+            NULL
           )
-          ON CONFLICT (stripe_session_id, product_id) DO UPDATE SET
-            stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
-            customer_email = EXCLUDED.customer_email,
-            amount_paid_cents = EXCLUDED.amount_paid_cents
         `;
 
         console.log("Purchase recorded successfully for session:", session.id, "product:", productId);
+
+        // Verify the purchase was created
+        const verifyPurchase = await storeDB.queryRow<{ id: number; productId: number }>`
+          SELECT id, product_id as "productId"
+          FROM purchases 
+          WHERE stripe_session_id = ${session.id} AND product_id = ${productId}
+        `;
+
+        if (verifyPurchase) {
+          console.log("Purchase verification successful:", verifyPurchase);
+        } else {
+          console.error("Purchase verification failed for session:", session.id);
+        }
       }
 
       return { received: true };
