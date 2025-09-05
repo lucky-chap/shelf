@@ -35,8 +35,6 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
       throw APIError.failedPrecondition("Stripe not configured (STRIPE_SECRET_KEY missing)");
     }
 
-		console.log("secret key on checkout: ", stripeSecretKey())
-
     // Get product details
     const product = await storeDB.queryRow<{
       id: number;
