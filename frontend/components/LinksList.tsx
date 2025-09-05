@@ -8,7 +8,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { generateVisitorId } from "../utils/analytics";
 import backend from "~backend/client";
 
-export default function LinksList() {
+interface LinksListProps {
+  isAdminView?: boolean;
+}
+
+export default function LinksList({ isAdminView = false }: LinksListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -93,7 +97,7 @@ export default function LinksList() {
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 links-container">
             {links.map((link) => (
-              <LinkButton key={link.id} link={link} onLinkClick={handleLinkClick} isLoading={clickMutation.isPending} />
+              <LinkButton key={link.id} link={link} onLinkClick={handleLinkClick} isLoading={clickMutation.isPending} isAdminView={isAdminView} />
             ))}
           </div>
         );
@@ -106,7 +110,7 @@ export default function LinksList() {
                 {index > 0 && (
                   <div className="absolute left-2 -top-4 w-px h-4 bg-border" />
                 )}
-                <LinkButton link={link} onLinkClick={handleLinkClick} isLoading={clickMutation.isPending} />
+                <LinkButton link={link} onLinkClick={handleLinkClick} isLoading={clickMutation.isPending} isAdminView={isAdminView} />
               </div>
             ))}
           </div>
@@ -125,7 +129,7 @@ export default function LinksList() {
               >
                 <span className="font-normal">{link.title}</span>
                 <div className="flex items-center gap-2 text-xs opacity-60">
-                  <span>{link.clickCount}</span>
+                  {isAdminView && <span>{link.clickCount}</span>}
                   <ExternalLink className="h-3 w-3" />
                 </div>
               </Button>
@@ -155,10 +159,12 @@ export default function LinksList() {
                       )}
                     </div>
                     <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-xs">
-                        <Eye className="h-3 w-3 mr-1" />
-                        {link.clickCount}
-                      </Badge>
+                      {isAdminView && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Eye className="h-3 w-3 mr-1" />
+                          {link.clickCount}
+                        </Badge>
+                      )}
                       <ExternalLink className="h-3 w-3 text-muted-foreground" />
                     </div>
                   </div>
@@ -172,7 +178,7 @@ export default function LinksList() {
         return (
           <div className="space-y-3 links-container">
             {links.map((link) => (
-              <LinkButton key={link.id} link={link} onLinkClick={handleLinkClick} isLoading={clickMutation.isPending} />
+              <LinkButton key={link.id} link={link} onLinkClick={handleLinkClick} isLoading={clickMutation.isPending} isAdminView={isAdminView} />
             ))}
           </div>
         );
@@ -197,11 +203,13 @@ export default function LinksList() {
 function LinkButton({ 
   link, 
   onLinkClick, 
-  isLoading 
+  isLoading,
+  isAdminView = false
 }: { 
   link: any; 
   onLinkClick: (id: number) => void; 
-  isLoading: boolean; 
+  isLoading: boolean;
+  isAdminView?: boolean;
 }) {
   return (
     <Button
@@ -227,10 +235,12 @@ function LinkButton({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="flex items-center gap-1">
-          <Eye className="h-3 w-3" />
-          {link.clickCount}
-        </Badge>
+        {isAdminView && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {link.clickCount}
+          </Badge>
+        )}
         <ExternalLink className="h-4 w-4" />
       </div>
     </Button>
