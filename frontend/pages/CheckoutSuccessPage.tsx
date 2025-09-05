@@ -104,7 +104,6 @@ function CheckoutSuccessPageContent() {
 
 	const handleDownloadClick = () => {
 	  if (downloadData) {
-			console.log("URL for download: ", downloadData.downloadUrl)
 	    const link = document.createElement("a");
 	    link.href = downloadData.downloadUrl;
 	    link.setAttribute("download", downloadData.fileName);
