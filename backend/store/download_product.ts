@@ -18,6 +18,8 @@ export interface DownloadProductResponse {
 export const downloadProduct = api<DownloadProductRequest, DownloadProductResponse>(
   { expose: true, method: "POST", path: "/store/download" },
   async (req) => {
+    console.log("Download request received:", { productId: req.productId, sessionId: req.sessionId });
+
     // Get product details
     const product = await storeDB.queryRow<{
       id: number;
@@ -40,8 +42,12 @@ export const downloadProduct = api<DownloadProductRequest, DownloadProductRespon
       throw APIError.failedPrecondition("product is not available");
     }
 
+    console.log("Product found:", { id: product.id, title: product.title, price: product.priceCents, fileUrl: product.fileUrl });
+
     // For free products, allow immediate download
     if (product.priceCents === 0) {
+      console.log("Processing free product download");
+      
       // Update download count
       await storeDB.exec`
         UPDATE products 
@@ -184,29 +190,48 @@ export const downloadProduct = api<DownloadProductRequest, DownloadProductRespon
     try {
       // Extract filename from the stored file URL
       // The fileUrl is stored as "product-files/timestamp_filename"
-      const fileUrlParts = product.fileUrl.split('/');
-      const fileName = fileUrlParts[fileUrlParts.length - 1]; // Get the last part (the actual filename)
+      console.log("Original file URL:", product.fileUrl);
+      
+      let fileName = "";
+      if (product.fileUrl.startsWith("product-files/")) {
+        // Remove the prefix to get just the filename
+        fileName = product.fileUrl.replace("product-files/", "");
+      } else {
+        // Fallback: take everything after the last slash
+        const fileUrlParts = product.fileUrl.split('/');
+        fileName = fileUrlParts[fileUrlParts.length - 1];
+      }
       
       if (!fileName) {
+        console.error("Could not extract filename from file URL:", product.fileUrl);
         throw APIError.internal("invalid file URL format");
       }
 
-      console.log("Generating signed URL for file:", fileName);
+      console.log("Extracted filename for signed URL:", fileName);
 
       // Generate a signed download URL (expires in 1 hour)
-      const { url } = await productFiles.signedDownloadUrl(fileName, {
+      const signedUrlResult = await productFiles.signedDownloadUrl(fileName, {
         ttl: 3600 // 1 hour
       });
 
-      console.log("Generated signed URL successfully");
+      console.log("Signed URL generated successfully:", { url: signedUrlResult.url });
 
-      return {
-        downloadUrl: url,
+      const response = {
+        downloadUrl: signedUrlResult.url,
         fileName: product.fileName,
         expiresIn: 3600
       };
+
+      console.log("Returning download response:", response);
+      return response;
+
     } catch (error: any) {
       console.error("Failed to generate download URL:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        fileUrl: product.fileUrl
+      });
       throw APIError.internal("failed to generate download link");
     }
   }
