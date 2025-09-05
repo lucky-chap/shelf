@@ -35,7 +35,9 @@ export interface GetLinkHeatmapResponse {
 // Retrieves detailed click heatmap data for all links.
 export const getLinkHeatmap = api<GetLinkHeatmapParams, GetLinkHeatmapResponse>(
   { expose: true, method: "GET", path: "/analytics/link-heatmap" },
-  async ({ days = 30 }) => {
+  async (params) => {
+    const days = params.days || 30;
+    
     const links = await analyticsDB.queryAll<{ id: number; title: string; totalClicks: number }>`
       SELECT l.id, l.title, l.click_count as "totalClicks"
       FROM links l
