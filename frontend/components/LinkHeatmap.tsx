@@ -16,7 +16,7 @@ function LinkHeatmapContent() {
     queryKey: ["analytics", "heatmap", selectedDays],
     queryFn: async () => {
       try {
-        return await backend.analytics.getLinkHeatmap({ days: parseInt(selectedDays) });
+        return await backend.analytics.getLinkHeatmap({ days: 22 });
       } catch (error: any) {
         console.error("Heatmap fetch failed:", error);
         throw error;
