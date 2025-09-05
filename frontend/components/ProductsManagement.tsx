@@ -41,13 +41,178 @@ import { CardLoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
 import { isStripeConfigured } from "../config";
+import React from "react";
 import backend from "~backend/client";
+
+interface ProductFormData {
+  title: string;
+  description: string;
+  priceCents: number;
+  coverImageUrl: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+}
+
+interface FileUploadState {
+  file: File | null;
+  uploading: boolean;
+}
+
+interface ProductFormProps {
+  formData: ProductFormData;
+  onInputChange: (field: string, value: string | number) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  isSubmitting: boolean;
+  title: string;
+  editingProduct: any;
+  fileUpload: FileUploadState;
+  coverImageUpload: FileUploadState;
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onCoverImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  formatFileSize: (bytes: number) => string;
+}
+
+const ProductForm = React.memo<ProductFormProps>(({ 
+  formData, 
+  onInputChange, 
+  onSubmit, 
+  isSubmitting, 
+  title, 
+  editingProduct, 
+  fileUpload, 
+  coverImageUpload, 
+  onFileSelect, 
+  onCoverImageSelect, 
+  formatFileSize 
+}) => (
+  <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="title">Title *</Label>
+      <Input
+        id="title"
+        placeholder="My Digital Product"
+        value={formData.title}
+        onChange={(e) => onInputChange("title", e.target.value)}
+        required
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label htmlFor="description">Description</Label>
+      <Textarea
+        id="description"
+        placeholder="Describe your product..."
+        value={formData.description}
+        onChange={(e) => onInputChange("description", e.target.value)}
+        rows={3}
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label htmlFor="price">Price</Label>
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground">$</span>
+        <Input
+          id="price"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="0.00"
+          value={formData.priceCents / 100}
+          onChange={(e) => onInputChange("priceCents", Math.round(parseFloat(e.target.value || "0") * 100))}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Set to $0.00 for free products. Paid products must be at least $1.00.
+        {!isStripeConfigured() && (
+          <span className="text-destructive"> (Stripe not configured - only free products will work)</span>
+        )}
+      </p>
+    </div>
+
+    <div className="space-y-2">
+      <Label>Product File *</Label>
+      {!editingProduct && (
+        <>
+          <Input
+            type="file"
+            onChange={onFileSelect}
+            disabled={fileUpload.uploading}
+            accept=".pdf,.zip,.png,.jpg,.jpeg,.gif,.mp4,.mp3,.txt,.doc,.docx,.xls,.xlsx"
+          />
+          {fileUpload.uploading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <LoadingSpinner size="sm" />
+              Uploading file...
+            </div>
+          )}
+        </>
+      )}
+      {formData.fileUrl && (
+        <div className="p-3 bg-muted rounded-lg">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{formData.fileName}</span>
+            <Badge variant="secondary">{formatFileSize(formData.fileSize)}</Badge>
+          </div>
+        </div>
+      )}
+    </div>
+
+    <div className="space-y-2">
+      <Label>Cover Image (Optional)</Label>
+      <Input
+        type="file"
+        onChange={onCoverImageSelect}
+        disabled={coverImageUpload.uploading}
+        accept="image/*"
+      />
+      {coverImageUpload.uploading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <LoadingSpinner size="sm" />
+          Uploading cover image...
+        </div>
+      )}
+      {formData.coverImageUrl && (
+        <div className="p-3 bg-muted rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded overflow-hidden">
+              <img 
+                src={formData.coverImageUrl} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <span className="text-sm text-muted-foreground">Cover image uploaded</span>
+          </div>
+        </div>
+      )}
+    </div>
+
+    <DialogFooter>
+      <Button 
+        type="submit" 
+        disabled={isSubmitting || !formData.fileUrl}
+        className="w-full"
+      >
+        {isSubmitting ? (
+          <LoadingSpinner size="sm" text={`${title}...`} />
+        ) : (
+          title
+        )}
+      </Button>
+    </DialogFooter>
+  </form>
+));
+
+ProductForm.displayName = "ProductForm";
 
 function ProductsManagementContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     title: "",
     description: "",
     priceCents: 0,
@@ -56,14 +221,8 @@ function ProductsManagementContent() {
     fileName: "",
     fileSize: 0
   });
-  const [fileUpload, setFileUpload] = useState<{
-    file: File | null;
-    uploading: boolean;
-  }>({ file: null, uploading: false });
-  const [coverImageUpload, setCoverImageUpload] = useState<{
-    file: File | null;
-    uploading: boolean;
-  }>({ file: null, uploading: false });
+  const [fileUpload, setFileUpload] = useState<FileUploadState>({ file: null, uploading: false });
+  const [coverImageUpload, setCoverImageUpload] = useState<FileUploadState>({ file: null, uploading: false });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,7 +238,8 @@ function ProductsManagementContent() {
     queryKey: ["admin-products"],
     queryFn: async () => {
       try {
-        return await backend.store.listAllProducts();
+        const result = await backend.store.listAllProducts();
+        return { products: result.products || [] };
       } catch (error: any) {
         console.error("Failed to fetch products:", error);
         throw error;
@@ -180,7 +340,7 @@ function ProductsManagementContent() {
   });
 
   const createProductMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: ProductFormData) => {
       return await backend.store.createProduct(data);
     },
     onSuccess: () => {
@@ -204,7 +364,7 @@ function ProductsManagementContent() {
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: async (data: typeof formData & { id: number }) => {
+    mutationFn: async (data: ProductFormData & { id: number }) => {
       return await backend.store.updateProduct(data);
     },
     onSuccess: () => {
@@ -305,23 +465,23 @@ function ProductsManagementContent() {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setFileUpload({ file, uploading: true });
       uploadFileMutation.mutate(file);
     }
-  };
+  }, [uploadFileMutation]);
 
-  const handleCoverImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setCoverImageUpload({ file, uploading: true });
       uploadCoverImageMutation.mutate(file);
     }
-  };
+  }, [uploadCoverImageMutation]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.fileUrl) {
       toast({
@@ -351,12 +511,41 @@ function ProductsManagementContent() {
       return;
     }
 
-    if (editingProduct) {
-      updateProductMutation.mutate({ ...formData, id: editingProduct.id });
-    } else {
-      createProductMutation.mutate(formData);
+    createProductMutation.mutate(formData);
+  }, [formData, createProductMutation, toast]);
+
+  const handleEditSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title || !formData.fileUrl || !editingProduct) {
+      toast({
+        title: "Missing Information",
+        description: "Title and file are required.",
+        variant: "destructive",
+      });
+      return;
     }
-  };
+
+    // Validate price
+    if (formData.priceCents < 0) {
+      toast({
+        title: "Invalid Price",
+        description: "Price cannot be negative.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.priceCents > 0 && formData.priceCents < 100) {
+      toast({
+        title: "Invalid Price",
+        description: "Paid products must be at least $1.00.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateProductMutation.mutate({ ...formData, id: editingProduct.id });
+  }, [formData, editingProduct, updateProductMutation, toast]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -436,127 +625,6 @@ function ProductsManagementContent() {
 
   const products = productsQuery.data?.products || [];
 
-  const ProductForm = ({ title, isSubmitting }: { title: string; isSubmitting: boolean }) => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title *</Label>
-        <Input
-          id="title"
-          placeholder="My Digital Product"
-          value={formData.title}
-          onChange={(e) => handleInputChange("title", e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          placeholder="Describe your product..."
-          value={formData.description}
-          onChange={(e) => handleInputChange("description", e.target.value)}
-          rows={3}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="price">Price</Label>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">$</span>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={formData.priceCents / 100}
-            onChange={(e) => handleInputChange("priceCents", Math.round(parseFloat(e.target.value || "0") * 100))}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Set to $0.00 for free products. Paid products must be at least $1.00.
-          {!isStripeConfigured() && (
-            <span className="text-destructive"> (Stripe not configured - only free products will work)</span>
-          )}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Product File *</Label>
-        {!editingProduct && (
-          <>
-            <Input
-              type="file"
-              onChange={handleFileSelect}
-              disabled={fileUpload.uploading}
-              accept=".pdf,.zip,.png,.jpg,.jpeg,.gif,.mp4,.mp3,.txt,.doc,.docx,.xls,.xlsx"
-            />
-            {fileUpload.uploading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <LoadingSpinner size="sm" />
-                Uploading file...
-              </div>
-            )}
-          </>
-        )}
-        {formData.fileUrl && (
-          <div className="p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{formData.fileName}</span>
-              <Badge variant="secondary">{formatFileSize(formData.fileSize)}</Badge>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label>Cover Image (Optional)</Label>
-        <Input
-          type="file"
-          onChange={handleCoverImageSelect}
-          disabled={coverImageUpload.uploading}
-          accept="image/*"
-        />
-        {coverImageUpload.uploading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <LoadingSpinner size="sm" />
-            Uploading cover image...
-          </div>
-        )}
-        {formData.coverImageUrl && (
-          <div className="p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded overflow-hidden">
-                <img 
-                  src={formData.coverImageUrl} 
-                  alt="Cover" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <span className="text-sm text-muted-foreground">Cover image uploaded</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <DialogFooter>
-        <Button 
-          type="submit" 
-          disabled={isSubmitting || !formData.fileUrl}
-          className="w-full"
-        >
-          {isSubmitting ? (
-            <LoadingSpinner size="sm" text={`${title}...`} />
-          ) : (
-            title
-          )}
-        </Button>
-      </DialogFooter>
-    </form>
-  );
-
   return (
     <div className="space-y-6">
       <Card>
@@ -580,7 +648,19 @@ function ProductsManagementContent() {
                     Create a new digital product for your store
                   </DialogDescription>
                 </DialogHeader>
-                <ProductForm title="Create Product" isSubmitting={createProductMutation.isPending} />
+                <ProductForm 
+                  formData={formData}
+                  onInputChange={handleInputChange}
+                  onSubmit={handleCreateSubmit}
+                  isSubmitting={createProductMutation.isPending}
+                  title="Create Product"
+                  editingProduct={editingProduct}
+                  fileUpload={fileUpload}
+                  coverImageUpload={coverImageUpload}
+                  onFileSelect={handleFileSelect}
+                  onCoverImageSelect={handleCoverImageSelect}
+                  formatFileSize={formatFileSize}
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -627,7 +707,19 @@ function ProductsManagementContent() {
               Update your product details
             </DialogDescription>
           </DialogHeader>
-          <ProductForm title="Update Product" isSubmitting={updateProductMutation.isPending} />
+          <ProductForm 
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSubmit={handleEditSubmit}
+            isSubmitting={updateProductMutation.isPending}
+            title="Update Product"
+            editingProduct={editingProduct}
+            fileUpload={fileUpload}
+            coverImageUpload={coverImageUpload}
+            onFileSelect={handleFileSelect}
+            onCoverImageSelect={handleCoverImageSelect}
+            formatFileSize={formatFileSize}
+          />
         </DialogContent>
       </Dialog>
     </div>

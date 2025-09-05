@@ -39,13 +39,167 @@ import DraggableLink from "./DraggableLink";
 import { CardLoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
+import React from "react";
 import backend from "~backend/client";
+
+interface LinkFormData {
+  title: string;
+  url: string;
+  description: string;
+  iconUrl: string;
+  backgroundColor: string;
+  textColor: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface LinkFormProps {
+  formData: LinkFormData;
+  onInputChange: (field: string, value: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  isSubmitting: boolean;
+  title: string;
+}
+
+const LinkForm = React.memo<LinkFormProps>(({ formData, onInputChange, onSubmit, isSubmitting, title }) => (
+  <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="title">Title *</Label>
+      <Input
+        id="title"
+        placeholder="My Awesome Link"
+        value={formData.title}
+        onChange={(e) => onInputChange("title", e.target.value)}
+        required
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label htmlFor="url">URL *</Label>
+      <Input
+        id="url"
+        placeholder="https://example.com"
+        value={formData.url}
+        onChange={(e) => onInputChange("url", e.target.value)}
+        required
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label htmlFor="description">Description</Label>
+      <Textarea
+        id="description"
+        placeholder="Optional description..."
+        value={formData.description}
+        onChange={(e) => onInputChange("description", e.target.value)}
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label htmlFor="iconUrl">Icon URL</Label>
+      <Input
+        id="iconUrl"
+        placeholder="https://example.com/icon.png"
+        value={formData.iconUrl}
+        onChange={(e) => onInputChange("iconUrl", e.target.value)}
+      />
+    </div>
+
+    <div className="space-y-4">
+      <Label className="flex items-center gap-2">
+        <Calendar className="h-4 w-4" />
+        Scheduling (Optional)
+      </Label>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="startDate">Start Date & Time</Label>
+          <Input
+            id="startDate"
+            type="datetime-local"
+            value={formData.startDate}
+            onChange={(e) => onInputChange("startDate", e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Link will be hidden until this date
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="endDate">End Date & Time</Label>
+          <Input
+            id="endDate"
+            type="datetime-local"
+            value={formData.endDate}
+            onChange={(e) => onInputChange("endDate", e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Link will be hidden after this date
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="backgroundColor">Background Color</Label>
+        <div className="flex gap-2">
+          <Input
+            id="backgroundColor"
+            type="color"
+            value={formData.backgroundColor}
+            onChange={(e) => onInputChange("backgroundColor", e.target.value)}
+            className="w-16 h-10"
+          />
+          <Input
+            value={formData.backgroundColor}
+            onChange={(e) => onInputChange("backgroundColor", e.target.value)}
+            placeholder="#FFFFFF"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="textColor">Text Color</Label>
+        <div className="flex gap-2">
+          <Input
+            id="textColor"
+            type="color"
+            value={formData.textColor}
+            onChange={(e) => onInputChange("textColor", e.target.value)}
+            className="w-16 h-10"
+          />
+          <Input
+            value={formData.textColor}
+            onChange={(e) => onInputChange("textColor", e.target.value)}
+            placeholder="#000000"
+          />
+        </div>
+      </div>
+    </div>
+
+    <DialogFooter>
+      <Button 
+        type="submit" 
+        disabled={isSubmitting}
+        className="w-full"
+      >
+        {isSubmitting ? (
+          <LoadingSpinner size="sm" text={`${title}...`} />
+        ) : (
+          title
+        )}
+      </Button>
+    </DialogFooter>
+  </form>
+));
+
+LinkForm.displayName = "LinkForm";
 
 function LinksManagementContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LinkFormData>({
     title: "",
     url: "",
     description: "",
@@ -74,12 +228,15 @@ function LinksManagementContent() {
         const response = await fetch('/api/links/admin');
         if (!response.ok) {
           // Fallback to regular links endpoint if admin endpoint doesn't exist
-          return await backend.links.list();
+          const result = await backend.links.list();
+          return { links: result.links || [] };
         }
-        return await response.json();
+        const result = await response.json();
+        return { links: result.links || [] };
       } catch (error: any) {
         // Fallback to regular links endpoint
-        return await backend.links.list();
+        const result = await backend.links.list();
+        return { links: result.links || [] };
       }
     },
     retry: 3,
@@ -87,7 +244,7 @@ function LinksManagementContent() {
   });
 
   const createLinkMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: LinkFormData) => {
       const payload: any = {
         title: data.title,
         url: data.url,
@@ -127,7 +284,7 @@ function LinksManagementContent() {
   });
 
   const updateLinkMutation = useMutation({
-    mutationFn: async (data: typeof formData & { id: number }) => {
+    mutationFn: async (data: LinkFormData & { id: number }) => {
       const payload: any = {
         id: data.id,
         title: data.title,
@@ -256,7 +413,7 @@ function LinksManagementContent() {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.url) {
       toast({
@@ -281,12 +438,36 @@ function LinksManagementContent() {
       }
     }
 
-    if (editingLink) {
-      updateLinkMutation.mutate({ ...formData, id: editingLink.id });
-    } else {
-      createLinkMutation.mutate(formData);
+    createLinkMutation.mutate(formData);
+  }, [formData, createLinkMutation, toast]);
+
+  const handleEditSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title || !formData.url || !editingLink) {
+      toast({
+        title: "Missing Information",
+        description: "Title and URL are required.",
+        variant: "destructive",
+      });
+      return;
     }
-  };
+
+    // Validate date range if both dates are provided
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      if (start >= end) {
+        toast({
+          title: "Invalid Date Range",
+          description: "Start date must be before end date.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    updateLinkMutation.mutate({ ...formData, id: editingLink.id });
+  }, [formData, editingLink, updateLinkMutation, toast]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -353,138 +534,6 @@ function LinksManagementContent() {
 
   const links = linksQuery.data?.links || [];
 
-  const LinkForm = ({ title, isSubmitting }: { title: string; isSubmitting: boolean }) => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title *</Label>
-        <Input
-          id="title"
-          placeholder="My Awesome Link"
-          value={formData.title}
-          onChange={(e) => handleInputChange("title", e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="url">URL *</Label>
-        <Input
-          id="url"
-          placeholder="https://example.com"
-          value={formData.url}
-          onChange={(e) => handleInputChange("url", e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          placeholder="Optional description..."
-          value={formData.description}
-          onChange={(e) => handleInputChange("description", e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="iconUrl">Icon URL</Label>
-        <Input
-          id="iconUrl"
-          placeholder="https://example.com/icon.png"
-          value={formData.iconUrl}
-          onChange={(e) => handleInputChange("iconUrl", e.target.value)}
-        />
-      </div>
-
-      <div className="space-y-4">
-        <Label className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
-          Scheduling (Optional)
-        </Label>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="startDate">Start Date & Time</Label>
-            <Input
-              id="startDate"
-              type="datetime-local"
-              value={formData.startDate}
-              onChange={(e) => handleInputChange("startDate", e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Link will be hidden until this date
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="endDate">End Date & Time</Label>
-            <Input
-              id="endDate"
-              type="datetime-local"
-              value={formData.endDate}
-              onChange={(e) => handleInputChange("endDate", e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Link will be hidden after this date
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="backgroundColor">Background Color</Label>
-          <div className="flex gap-2">
-            <Input
-              id="backgroundColor"
-              type="color"
-              value={formData.backgroundColor}
-              onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
-              className="w-16 h-10"
-            />
-            <Input
-              value={formData.backgroundColor}
-              onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
-              placeholder="#FFFFFF"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="textColor">Text Color</Label>
-          <div className="flex gap-2">
-            <Input
-              id="textColor"
-              type="color"
-              value={formData.textColor}
-              onChange={(e) => handleInputChange("textColor", e.target.value)}
-              className="w-16 h-10"
-            />
-            <Input
-              value={formData.textColor}
-              onChange={(e) => handleInputChange("textColor", e.target.value)}
-              placeholder="#000000"
-            />
-          </div>
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button 
-          type="submit" 
-          disabled={isSubmitting}
-          className="w-full"
-        >
-          {isSubmitting ? (
-            <LoadingSpinner size="sm" text={`${title}...`} />
-          ) : (
-            title
-          )}
-        </Button>
-      </DialogFooter>
-    </form>
-  );
-
   return (
     <div className="space-y-6">
       <Card>
@@ -508,7 +557,13 @@ function LinksManagementContent() {
                     Create a new link for your landing page with optional scheduling
                   </DialogDescription>
                 </DialogHeader>
-                <LinkForm title="Create Link" isSubmitting={createLinkMutation.isPending} />
+                <LinkForm 
+                  formData={formData}
+                  onInputChange={handleInputChange}
+                  onSubmit={handleCreateSubmit}
+                  isSubmitting={createLinkMutation.isPending}
+                  title="Create Link"
+                />
               </DialogContent>
             </Dialog>
           </div>
@@ -553,7 +608,13 @@ function LinksManagementContent() {
               Update your link details and scheduling
             </DialogDescription>
           </DialogHeader>
-          <LinkForm title="Update Link" isSubmitting={updateLinkMutation.isPending} />
+          <LinkForm 
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSubmit={handleEditSubmit}
+            isSubmitting={updateLinkMutation.isPending}
+            title="Update Link"
+          />
         </DialogContent>
       </Dialog>
     </div>
