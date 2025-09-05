@@ -80,6 +80,8 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
           return { received: true };
         }
 
+				console.log("About to record product data to DB...")
+
         // Record the purchase
         await storeDB.exec`
           INSERT INTO purchases (
