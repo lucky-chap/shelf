@@ -6,14 +6,6 @@ import { stripeSecretKey } from "./config"
 /**
  * Reads a non-empty environment variable.
  */
-function readEnv(name: string): string | null {
-  // const v = process.env[name];
-  // if (v && typeof v === "string" && v.trim().length > 0) {
-  //   return v;
-  // }
-  // return null;
-	return "sk_test_51S2Y3iPUkb8apElmlzd3CE3r0ReJ2KjC9sDyYXiIps1onwmA6sff6JX4OzFR7N8n9Ub3zRL12tNKGq9OTxmgdlI500vRtyRqQV"
-}
 
 export interface CreateCheckoutSessionRequest {
   productId: number;

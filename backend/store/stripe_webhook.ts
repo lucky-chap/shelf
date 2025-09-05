@@ -4,16 +4,6 @@ import { Header } from "encore.dev/api";
 
 import { stripeSecretKey, stripeWebhookSecret } from "./config"
 
-/**
- * Reads a non-empty environment variable.
- */
-function readEnv(name: string): string | null {
-  const v = process.env[name];
-  if (v && typeof v === "string" && v.trim().length > 0) {
-    return v;
-  }
-  return null;
-}
 
 export interface StripeWebhookRequest {
   stripeSignature: Header<"Stripe-Signature">;
