@@ -60,6 +60,8 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
       // Handle the checkout session completed event
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as any;
+
+				console.log("Stripe session: ", session);
         
         // Extract product ID from metadata
         const productId = parseInt(session.metadata?.productId);
