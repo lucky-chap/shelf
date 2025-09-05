@@ -53,15 +53,33 @@ export const downloadProduct = api<DownloadProductRequest, DownloadProductRespon
         throw APIError.invalidArgument("sessionId required for paid products");
       }
 
+      console.log("Checking purchase for session:", req.sessionId, "product:", req.productId);
+
       // Check if there's a valid purchase for this session and product
-      const purchase = await storeDB.queryRow<{ id: number }>`
-        SELECT id 
+      const purchase = await storeDB.queryRow<{ id: number; created: Date }>`
+        SELECT id, purchase_date as created
         FROM purchases 
         WHERE stripe_session_id = ${req.sessionId} 
           AND product_id = ${req.productId}
       `;
 
+      console.log("Purchase found:", purchase);
+
       if (!purchase) {
+        // Also check if the session exists but hasn't been processed yet
+        console.log("No purchase found, checking if session exists in Stripe...");
+        
+        // For debugging: let's see what purchases exist for this product
+        const allPurchases = await storeDB.queryAll<{ sessionId: string; productId: number; created: Date }>`
+          SELECT stripe_session_id as "sessionId", product_id as "productId", purchase_date as created
+          FROM purchases 
+          WHERE product_id = ${req.productId}
+          ORDER BY purchase_date DESC
+          LIMIT 5
+        `;
+        
+        console.log("Recent purchases for product", req.productId, ":", allPurchases);
+        
         throw APIError.permissionDenied("valid purchase required for download");
       }
 

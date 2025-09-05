@@ -4,7 +4,6 @@ import { Header } from "encore.dev/api";
 
 import { stripeSecretKey, stripeWebhookSecret } from "./config"
 
-
 export interface StripeWebhookRequest {
   stripeSignature: Header<"Stripe-Signature">;
   body: string; // Raw webhook body
@@ -18,14 +17,14 @@ export interface StripeWebhookResponse {
 export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
   { expose: true, method: "POST", path: "/store/webhook" },
   async (req) => {
-
-    const webhookSecret = stripeWebhookSecret;
+    const webhookSecret = stripeWebhookSecret();
+    const secretKey = stripeSecretKey();
 
     if (!webhookSecret) {
       throw APIError.failedPrecondition("Stripe webhook secret not configured");
     }
 
-		if (!stripeSecretKey) {
+    if (!secretKey) {
       throw APIError.failedPrecondition("Stripe secret key not configured");
     }
 
@@ -36,7 +35,7 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
     try {
       // Import Stripe dynamically
       const Stripe = (await import("stripe")).default;
-      const stripe = new Stripe(stripeSecretKey, {
+      const stripe = new Stripe(secretKey, {
         apiVersion: "2023-10-16"
       });
 
@@ -70,7 +69,7 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
           return { received: true };
         }
 
-				console.log("product on webhook: ", product)
+        console.log("Recording purchase for session:", session.id, "product:", productId);
 
         // Record the purchase
         await storeDB.exec`
@@ -89,10 +88,13 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
             ${session.amount_total || product.priceCents},
             NOW()
           )
-          ON CONFLICT (stripe_session_id) DO NOTHING
+          ON CONFLICT (stripe_session_id, product_id) DO UPDATE SET
+            stripe_payment_intent_id = EXCLUDED.stripe_payment_intent_id,
+            customer_email = EXCLUDED.customer_email,
+            amount_paid_cents = EXCLUDED.amount_paid_cents
         `;
 
-        console.log("Purchase recorded for session:", session.id, "product:", productId);
+        console.log("Purchase recorded successfully for session:", session.id, "product:", productId);
       }
 
       return { received: true };

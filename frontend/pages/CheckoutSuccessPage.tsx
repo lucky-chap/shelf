@@ -35,6 +35,9 @@ function CheckoutSuccessPageContent() {
       if (!productId || !sessionId) {
         throw new Error("Missing required parameters");
       }
+      
+      console.log("Attempting download with session:", sessionId, "product:", productId);
+      
       return await backend.store.downloadProduct({ 
         productId: parseInt(productId), 
         sessionId 
@@ -46,11 +49,25 @@ function CheckoutSuccessPageContent() {
     },
     onError: (error: any) => {
       console.error("Download failed:", error);
-      toast({
-        title: "Download Failed",
-        description: error.message || "Please try again or contact support.",
-        variant: "destructive",
-      });
+      
+      // If it's a permission error, let's wait a bit and try again
+      if (error.message?.includes("valid purchase required")) {
+        toast({
+          title: "Processing Purchase",
+          description: "Your purchase is being processed. We'll try again in a moment...",
+        });
+        
+        // Retry after 3 seconds
+        setTimeout(() => {
+          downloadMutation.mutate();
+        }, 3000);
+      } else {
+        toast({
+          title: "Download Failed",
+          description: error.message || "Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -68,12 +85,13 @@ function CheckoutSuccessPageContent() {
     downloadMutation.mutate();
   };
 
-  // Auto-trigger download after a short delay
+  // Auto-trigger download after a delay to allow webhook processing
   useEffect(() => {
     if (sessionId && productId) {
       const timer = setTimeout(() => {
+        console.log("Auto-triggering download for session:", sessionId, "product:", productId);
         downloadMutation.mutate();
-      }, 2000); // 2 second delay to show success message
+      }, 5000); // 5 second delay to allow webhook processing
 
       return () => clearTimeout(timer);
     }
@@ -133,13 +151,16 @@ function CheckoutSuccessPageContent() {
               <CardContent className="space-y-6">
                 <div className="text-center space-y-4">
                   <p className="text-muted-foreground">
-                    Your payment has been processed successfully. You can download your product immediately.
+                    Your payment has been processed successfully. Your download will be available shortly.
                   </p>
                   
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-sm font-medium">Order Details</p>
                     <p className="text-sm text-muted-foreground">
                       Session ID: {sessionId.slice(0, 20)}...
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Product ID: {productId}
                     </p>
                   </div>
 
@@ -159,7 +180,8 @@ function CheckoutSuccessPageContent() {
                     )}
                   </Button>
 
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>Your download will be automatically prepared in a few moments.</p>
                     <p>Need help? Contact support with your session ID.</p>
                     <p>Your download link will be valid for 1 hour.</p>
                   </div>
