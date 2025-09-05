@@ -183,15 +183,22 @@ export const downloadProduct = api<DownloadProductRequest, DownloadProductRespon
 
     try {
       // Extract filename from the stored file URL
-      const fileName = product.fileUrl.split('/').pop();
+      // The fileUrl is stored as "product-files/timestamp_filename"
+      const fileUrlParts = product.fileUrl.split('/');
+      const fileName = fileUrlParts[fileUrlParts.length - 1]; // Get the last part (the actual filename)
+      
       if (!fileName) {
-        throw APIError.internal("invalid file URL");
+        throw APIError.internal("invalid file URL format");
       }
+
+      console.log("Generating signed URL for file:", fileName);
 
       // Generate a signed download URL (expires in 1 hour)
       const { url } = await productFiles.signedDownloadUrl(fileName, {
         ttl: 3600 // 1 hour
       });
+
+      console.log("Generated signed URL successfully");
 
       return {
         downloadUrl: url,
