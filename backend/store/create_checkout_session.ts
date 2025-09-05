@@ -98,6 +98,8 @@ export const createCheckoutSession = api<CreateCheckoutSessionRequest, CreateChe
         throw APIError.internal("failed to create checkout session");
       }
 
+			console.log("Stripe session on create_checkout", session)
+
       return {
         sessionId: session.id,
         url: session.url
