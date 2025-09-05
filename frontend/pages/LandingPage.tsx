@@ -20,7 +20,6 @@ import { useStripeKey } from "../utils/hooks"
 
 function LandingPageContent() {
   const { data, isLoading, isError } = useStripeKey();
-  console.log("key on landing page: ", data);
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
@@ -258,11 +257,11 @@ function LandingPageContent() {
                       {config.title}
                     </h1>
                     <p className="text-muted-foreground mt-2">{config.description}</p>
-                    {selectedThemePreset && (
+                    {/* {selectedThemePreset && (
                       <p className="text-xs text-muted-foreground mt-1 opacity-60">
                         {selectedThemePreset.name} Theme
                       </p>
-                    )}
+                    )} */}
                     {selectedLayout && selectedLayout.id !== "default" && (
                       <p className="text-xs text-muted-foreground mt-1 opacity-60">
                         {selectedLayout.name} Layout

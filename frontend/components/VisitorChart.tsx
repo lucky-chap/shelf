@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
-import { Eye, ExternalLink, TrendingUp } from "lucide-react";
+import { MousePointerClick, ExternalLink, TrendingUp } from "lucide-react";
 
 interface VisitorChartProps {
   hourlyData: Array<{
@@ -38,7 +38,7 @@ export default function VisitorChart({ hourlyData, dailyData }: VisitorChartProp
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Views (30 days)</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
+            <MousePointerClick className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalViews.toLocaleString()}</div>

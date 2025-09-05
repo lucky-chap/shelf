@@ -178,7 +178,7 @@ function AnalyticsContent() {
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {recentActivity.map((activity, index) => (
                       <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3"> 
                           {activity.type === "page_view" && <Eye className="h-4 w-4 text-blue-500" />}
                           {activity.type === "link_click" && <ExternalLink className="h-4 w-4 text-green-500" />}
                           {activity.type === "guest_entry" && <MessageSquare className="h-4 w-4 text-purple-500" />}

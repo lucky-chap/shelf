@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Eye } from "lucide-react";
+import { ExternalLink, MousePointerClick } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { generateVisitorId } from "../utils/analytics";
 import backend from "~backend/client";
@@ -161,7 +161,7 @@ export default function LinksList({ isAdminView = false }: LinksListProps) {
                     <div className="flex items-center justify-between">
                       {isAdminView && (
                         <Badge variant="secondary" className="text-xs">
-                          <Eye className="h-3 w-3 mr-1" />
+                          <MousePointerClick className="h-3 w-3 mr-1" />
                           {link.clickCount}
                         </Badge>
                       )}
@@ -237,7 +237,7 @@ function LinkButton({
       <div className="flex items-center gap-2">
         {isAdminView && (
           <Badge variant="secondary" className="flex items-center gap-1">
-            <Eye className="h-3 w-3" />
+            <MousePointerClick className="h-3 w-3" />
             {link.clickCount}
           </Badge>
         )}

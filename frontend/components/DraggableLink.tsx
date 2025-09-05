@@ -2,7 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical, Edit, Trash2, Eye, Calendar, Clock } from "lucide-react";
+import { GripVertical, Edit, Trash2, MousePointerClick, Calendar, Clock } from "lucide-react";
 
 interface DraggableLinkProps {
   link: {
@@ -105,7 +105,7 @@ export default function DraggableLink({ link, onEdit, onDelete, isDeleting }: Dr
           </Badge>
         )}
         <Badge variant="secondary" className="flex items-center gap-1">
-          <Eye className="h-3 w-3" />
+          <MousePointerClick className="h-3 w-3" />
           {link.clickCount}
         </Badge>
         <Button variant="ghost" size="sm" onClick={() => onEdit(link)}>
