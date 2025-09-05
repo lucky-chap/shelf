@@ -262,11 +262,11 @@ function LandingPageContent() {
                         {selectedThemePreset.name} Theme
                       </p>
                     )} */}
-                    {selectedLayout && selectedLayout.id !== "default" && (
+                    {/* {selectedLayout && selectedLayout.id !== "default" && (
                       <p className="text-xs text-muted-foreground mt-1 opacity-60">
                         {selectedLayout.name} Layout
                       </p>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </CardContent>
