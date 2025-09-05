@@ -12,6 +12,7 @@ export interface SiteConfig {
   backgroundType: string;
   backgroundImageUrl: string | null;
   selectedTheme: string | null;
+  layoutType: string | null;
 }
 
 // Retrieves the site configuration.
@@ -29,7 +30,8 @@ export const get = api<void, SiteConfig>(
         custom_domain as "customDomain",
         COALESCE(background_type, 'solid') as "backgroundType",
         background_image_url as "backgroundImageUrl",
-        selected_theme as "selectedTheme"
+        selected_theme as "selectedTheme",
+        layout_type as "layoutType"
       FROM site_config 
       WHERE id = 1
     `;
@@ -46,7 +48,8 @@ export const get = api<void, SiteConfig>(
         customDomain: null,
         backgroundType: "solid",
         backgroundImageUrl: null,
-        selectedTheme: null
+        selectedTheme: null,
+        layoutType: null
       };
     }
 

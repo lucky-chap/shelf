@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Settings, Save, Globe, Palette, Image } from "lucide-react";
+import { Settings, Save, Globe, Palette, Image, Upload, Layout } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ThemePresetSelector, { ThemePreset, themePresets } from "./ThemePresetSelector";
 import UnsplashImageSearch from "./UnsplashImageSearch";
 import DomainConfiguration from "./DomainConfiguration";
+import LayoutSelector from "./LayoutSelector";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
@@ -30,8 +31,13 @@ function SiteSettingsContent() {
     customDomain: "",
     backgroundType: "solid" as "solid" | "unsplash" | "upload",
     backgroundImageUrl: "",
-    selectedTheme: "" as string
+    selectedTheme: "" as string,
+    layoutType: "" as string
   });
+  const [avatarUpload, setAvatarUpload] = useState<{
+    file: File | null;
+    uploading: boolean;
+  }>({ file: null, uploading: false });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -49,6 +55,50 @@ function SiteSettingsContent() {
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const reader = new FileReader();
+      return new Promise<any>((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            const base64Content = reader.result?.toString().split(',')[1];
+            if (!base64Content) throw new Error("Failed to read file");
+            
+            const result = await backend.config.uploadAvatar({
+              fileName: file.name,
+              imageContent: base64Content
+            });
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+    },
+    onSuccess: (data) => {
+      setFormData(prev => ({
+        ...prev,
+        avatarUrl: data.avatarUrl
+      }));
+      setAvatarUpload({ file: null, uploading: false });
+      toast({
+        title: "Avatar Uploaded",
+        description: "Your avatar has been uploaded successfully.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Avatar upload failed:", error);
+      setAvatarUpload(prev => ({ ...prev, uploading: false }));
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateConfigMutation = useMutation({
@@ -80,6 +130,10 @@ function SiteSettingsContent() {
         updateData.selectedTheme = data.selectedTheme.trim();
       }
 
+      if (data.layoutType && data.layoutType.trim()) {
+        updateData.layoutType = data.layoutType.trim();
+      }
+
       return await backend.config.update(updateData);
     },
     onSuccess: () => {
@@ -99,6 +153,10 @@ function SiteSettingsContent() {
     },
   });
 
+  const handleInputChange = useCallback((field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
   useEffect(() => {
     if (configQuery.data) {
       // If Unsplash is not configured but backgroundType is 'unsplash', force it to 'solid' to avoid unusable UI.
@@ -117,7 +175,8 @@ function SiteSettingsContent() {
         customDomain: configQuery.data.customDomain || "",
         backgroundType: nextBackgroundType,
         backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
-        selectedTheme: configQuery.data.selectedTheme || ""
+        selectedTheme: configQuery.data.selectedTheme || "",
+        layoutType: configQuery.data.layoutType || ""
       });
     }
   }, [configQuery.data, unsplashEnabled]);
@@ -151,13 +210,20 @@ function SiteSettingsContent() {
   };
 
   const handleThemeSelect = (preset: ThemePreset) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       themeColor: preset.themeColor,
       backgroundColor: preset.backgroundColor,
       textColor: preset.textColor,
       selectedTheme: preset.id,
-    });
+    }));
+  };
+
+  const handleLayoutSelect = (layoutType: string) => {
+    setFormData(prev => ({
+      ...prev,
+      layoutType
+    }));
   };
 
   const handleDomainChange = (domain: string | null) => {
@@ -181,18 +247,26 @@ function SiteSettingsContent() {
       });
       return;
     }
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       backgroundType: type,
-      backgroundImageUrl: type === "solid" ? "" : formData.backgroundImageUrl
-    });
+      backgroundImageUrl: type === "solid" ? "" : prev.backgroundImageUrl
+    }));
   };
 
   const handleUnsplashImageSelect = (imageUrl: string) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       backgroundImageUrl: imageUrl
-    });
+    }));
+  };
+
+  const handleAvatarUploadSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarUpload({ file, uploading: true });
+      uploadAvatarMutation.mutate(file);
+    }
   };
 
   if (configQuery.isLoading) {
@@ -244,7 +318,7 @@ function SiteSettingsContent() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             General
@@ -252,6 +326,10 @@ function SiteSettingsContent() {
           <TabsTrigger value="theme" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
             Theme
+          </TabsTrigger>
+          <TabsTrigger value="layout" className="flex items-center gap-2">
+            <Layout className="h-4 w-4" />
+            Layout
           </TabsTrigger>
           <TabsTrigger value="domain" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
@@ -279,7 +357,7 @@ function SiteSettingsContent() {
                     id="title"
                     placeholder="My Landing Page"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
                     required
                   />
                 </div>
@@ -290,7 +368,7 @@ function SiteSettingsContent() {
                     id="description"
                     placeholder="Welcome to my creator landing page"
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -310,17 +388,45 @@ function SiteSettingsContent() {
                       </p>
                     </div>
                     
-                    <div className="flex-1 space-y-2">
-                      <Label htmlFor="avatarUrl">Avatar Image URL</Label>
-                      <Input
-                        id="avatarUrl"
-                        placeholder="https://example.com/avatar.jpg"
-                        value={formData.avatarUrl}
-                        onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter a direct URL to your avatar image (JPG, PNG, etc.)
-                      </p>
+                    <div className="flex-1 space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="avatarUrl">Avatar Image URL</Label>
+                        <Input
+                          id="avatarUrl"
+                          placeholder="https://example.com/avatar.jpg"
+                          value={formData.avatarUrl}
+                          onChange={(e) => handleInputChange("avatarUrl", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter a direct URL to your avatar image (JPG, PNG, etc.)
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="h-px bg-border flex-1" />
+                        <span className="text-xs text-muted-foreground">OR</span>
+                        <div className="h-px bg-border flex-1" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="avatarUpload">Upload Avatar Image</Label>
+                        <Input
+                          id="avatarUpload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUploadSelect}
+                          disabled={avatarUpload.uploading}
+                        />
+                        {avatarUpload.uploading && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <LoadingSpinner size="sm" />
+                            Uploading avatar...
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Upload an image file (JPG, PNG, GIF, WEBP)
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -426,12 +532,12 @@ function SiteSettingsContent() {
                       id="themeColor"
                       type="color"
                       value={formData.themeColor}
-                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: "" })}
+                      onChange={(e) => handleInputChange("themeColor", e.target.value)}
                       className="w-16 h-10"
                     />
                     <Input
                       value={formData.themeColor}
-                      onChange={(e) => setFormData({ ...formData, themeColor: e.target.value, selectedTheme: "" })}
+                      onChange={(e) => handleInputChange("themeColor", e.target.value)}
                       placeholder="#3B82F6"
                     />
                   </div>
@@ -444,12 +550,12 @@ function SiteSettingsContent() {
                       id="backgroundColor"
                       type="color"
                       value={formData.backgroundColor}
-                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: "" })}
+                      onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
                       className="w-16 h-10"
                     />
                     <Input
                       value={formData.backgroundColor}
-                      onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value, selectedTheme: "" })}
+                      onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
                       placeholder="#FFFFFF"
                     />
                   </div>
@@ -462,12 +568,12 @@ function SiteSettingsContent() {
                       id="textColor"
                       type="color"
                       value={formData.textColor}
-                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: "" })}
+                      onChange={(e) => handleInputChange("textColor", e.target.value)}
                       className="w-16 h-10"
                     />
                     <Input
                       value={formData.textColor}
-                      onChange={(e) => setFormData({ ...formData, textColor: e.target.value, selectedTheme: "" })}
+                      onChange={(e) => handleInputChange("textColor", e.target.value)}
                       placeholder="#000000"
                     />
                   </div>
@@ -490,6 +596,15 @@ function SiteSettingsContent() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="layout">
+          <LayoutSelector
+            selectedLayout={formData.layoutType || "default"}
+            onLayoutSelect={handleLayoutSelect}
+            onSave={() => updateConfigMutation.mutate(formData)}
+            isSaving={updateConfigMutation.isPending}
+          />
         </TabsContent>
 
         <TabsContent value="domain">
@@ -550,6 +665,11 @@ function SiteSettingsContent() {
                       {formData.selectedTheme && (
                         <p className="text-xs opacity-60 mt-1">
                           Theme: {themePresets.find(t => t.id === formData.selectedTheme)?.name}
+                        </p>
+                      )}
+                      {formData.layoutType && (
+                        <p className="text-xs opacity-60 mt-1">
+                          Layout: {formData.layoutType}
                         </p>
                       )}
                     </div>

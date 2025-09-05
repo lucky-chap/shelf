@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -112,12 +112,12 @@ function ProductsManagementContent() {
       });
     },
     onSuccess: (data) => {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         fileUrl: data.fileUrl,
         fileName: data.fileName,
         fileSize: data.fileSize
-      });
+      }));
       setFileUpload({ file: null, uploading: false });
       toast({
         title: "File Uploaded",
@@ -126,7 +126,7 @@ function ProductsManagementContent() {
     },
     onError: (error: any) => {
       console.error("File upload failed:", error);
-      setFileUpload({ ...fileUpload, uploading: false });
+      setFileUpload(prev => ({ ...prev, uploading: false }));
       toast({
         title: "Upload Failed",
         description: error.message || "Please try again.",
@@ -158,10 +158,10 @@ function ProductsManagementContent() {
       });
     },
     onSuccess: (data) => {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         coverImageUrl: data.imageUrl
-      });
+      }));
       setCoverImageUpload({ file: null, uploading: false });
       toast({
         title: "Cover Image Uploaded",
@@ -170,7 +170,7 @@ function ProductsManagementContent() {
     },
     onError: (error: any) => {
       console.error("Cover image upload failed:", error);
-      setCoverImageUpload({ ...coverImageUpload, uploading: false });
+      setCoverImageUpload(prev => ({ ...prev, uploading: false }));
       toast({
         title: "Upload Failed",
         description: error.message || "Please try again.",
@@ -273,7 +273,7 @@ function ProductsManagementContent() {
     },
   });
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       title: "",
       description: "",
@@ -285,9 +285,9 @@ function ProductsManagementContent() {
     });
     setFileUpload({ file: null, uploading: false });
     setCoverImageUpload({ file: null, uploading: false });
-  };
+  }, []);
 
-  const handleEdit = (product: any) => {
+  const handleEdit = useCallback((product: any) => {
     setEditingProduct(product);
     setFormData({
       title: product.title,
@@ -299,7 +299,11 @@ function ProductsManagementContent() {
       fileSize: product.fileSize
     });
     setIsEditDialogOpen(true);
-  };
+  }, []);
+
+  const handleInputChange = useCallback((field: string, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -440,7 +444,7 @@ function ProductsManagementContent() {
           id="title"
           placeholder="My Digital Product"
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          onChange={(e) => handleInputChange("title", e.target.value)}
           required
         />
       </div>
@@ -451,7 +455,7 @@ function ProductsManagementContent() {
           id="description"
           placeholder="Describe your product..."
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) => handleInputChange("description", e.target.value)}
           rows={3}
         />
       </div>
@@ -467,10 +471,7 @@ function ProductsManagementContent() {
             step="0.01"
             placeholder="0.00"
             value={formData.priceCents / 100}
-            onChange={(e) => setFormData({ 
-              ...formData, 
-              priceCents: Math.round(parseFloat(e.target.value || "0") * 100)
-            })}
+            onChange={(e) => handleInputChange("priceCents", Math.round(parseFloat(e.target.value || "0") * 100))}
           />
         </div>
         <p className="text-xs text-muted-foreground">

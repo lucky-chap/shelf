@@ -12,6 +12,7 @@ export interface UpdateSiteConfigRequest {
   backgroundType?: "solid" | "unsplash" | "upload";
   backgroundImageUrl?: string;
   selectedTheme?: string;
+  layoutType?: string;
 }
 
 export interface SiteConfig {
@@ -25,6 +26,7 @@ export interface SiteConfig {
   backgroundType: string;
   backgroundImageUrl: string | null;
   selectedTheme: string | null;
+  layoutType: string | null;
 }
 
 // Updates the site configuration.
@@ -34,12 +36,12 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
     const config = await configDB.queryRow<SiteConfig>`
       INSERT INTO site_config (
         id, site_title, site_description, theme_color, background_color, text_color, 
-        owner_avatar_url, custom_domain, background_type, background_image_url, selected_theme
+        owner_avatar_url, custom_domain, background_type, background_image_url, selected_theme, layout_type
       )
       VALUES (
         1, ${req.title}, ${req.description}, ${req.themeColor}, ${req.backgroundColor}, ${req.textColor}, 
         ${req.avatarUrl || null}, ${req.customDomain || null}, ${req.backgroundType || "solid"}, 
-        ${req.backgroundImageUrl || null}, ${req.selectedTheme || null}
+        ${req.backgroundImageUrl || null}, ${req.selectedTheme || null}, ${req.layoutType || null}
       )
       ON CONFLICT (id) DO UPDATE SET
         site_title = EXCLUDED.site_title,
@@ -52,6 +54,7 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
         background_type = EXCLUDED.background_type,
         background_image_url = EXCLUDED.background_image_url,
         selected_theme = EXCLUDED.selected_theme,
+        layout_type = EXCLUDED.layout_type,
         updated_at = NOW()
       RETURNING 
         site_title as title,
@@ -63,7 +66,8 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
         custom_domain as "customDomain",
         background_type as "backgroundType",
         background_image_url as "backgroundImageUrl",
-        selected_theme as "selectedTheme"
+        selected_theme as "selectedTheme",
+        layout_type as "layoutType"
     `;
 
     if (!config) {

@@ -14,12 +14,13 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
+import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
-	import { useStripeKey } from "../utils/hooks"
+import { useStripeKey } from "../utils/hooks"
 
 function LandingPageContent() {
-	const { data, isLoading, isError } = useStripeKey();
-	console.log("key on landing page: ", data);
+  const { data, isLoading, isError } = useStripeKey();
+  console.log("key on landing page: ", data);
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
@@ -74,13 +75,19 @@ function LandingPageContent() {
     avatarUrl: null,
     backgroundType: "solid",
     backgroundImageUrl: null,
-    selectedTheme: null
+    selectedTheme: null,
+    layoutType: null
   };
 
   // Apply theme preset styles if a theme is selected
   const selectedThemePreset = config.selectedTheme 
     ? themePresets.find(t => t.id === config.selectedTheme)
     : null;
+
+  // Get selected layout
+  const selectedLayout = config.layoutType 
+    ? layoutOptions.find(l => l.id === config.layoutType)
+    : layoutOptions[0]; // default to first layout
 
   // Determine background styles
   const getBackgroundStyles = () => {
@@ -139,6 +146,22 @@ function LandingPageContent() {
     return styles;
   };
 
+  // Get layout-specific container classes
+  const getLayoutContainerClass = () => {
+    switch (selectedLayout?.id) {
+      case "grid":
+        return "max-w-4xl";
+      case "timeline":
+        return "max-w-3xl";
+      case "minimal":
+        return "max-w-lg";
+      case "cards":
+        return "max-w-5xl";
+      default:
+        return "max-w-2xl";
+    }
+  };
+
   const currentUrl = window.location.href;
   const ogImageUrl = config.avatarUrl || `${window.location.origin}/og-default.png`;
 
@@ -191,8 +214,8 @@ function LandingPageContent() {
         className={`${getThemeClasses()}`}
         style={getBackgroundStyles()}
       >
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <div className="space-y-8">
+        <div className={`${getLayoutContainerClass()} mx-auto px-4 py-8`}>
+          <div className={`space-y-8 layout-${selectedLayout?.id || 'default'}`}>
             {/* Header with Admin Access */}
             <div className="flex justify-between mb-4">
               <Link to="/store">
@@ -240,13 +263,21 @@ function LandingPageContent() {
                         {selectedThemePreset.name} Theme
                       </p>
                     )}
+                    {selectedLayout && selectedLayout.id !== "default" && (
+                      <p className="text-xs text-muted-foreground mt-1 opacity-60">
+                        {selectedLayout.name} Layout
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <ErrorBoundary>
-              <div style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}>
+              <div 
+                style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}
+                className={`layout-${selectedLayout?.id || 'default'}`}
+              >
                 <LinksList />
               </div>
             </ErrorBoundary>
@@ -278,6 +309,55 @@ function LandingPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Layout-specific CSS */}
+      <style jsx>{`
+        .layout-grid .links-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1rem;
+        }
+        
+        .layout-timeline .links-container > * {
+          position: relative;
+          padding-left: 2rem;
+        }
+        
+        .layout-timeline .links-container > *::before {
+          content: '';
+          position: absolute;
+          left: 0.5rem;
+          top: 50%;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--primary);
+          transform: translateY(-50%);
+        }
+        
+        .layout-minimal .links-container > * {
+          border: none;
+          background: transparent;
+          padding: 0.5rem;
+        }
+        
+        .layout-cards .links-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+          .layout-grid .links-container,
+          .layout-cards .links-container {
+            grid-template-columns: 1fr;
+          }
+          
+          .layout-timeline .links-container > * {
+            padding-left: 1rem;
+          }
+        }
+      `}</style>
     </>
   );
 }

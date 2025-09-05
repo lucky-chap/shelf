@@ -293,6 +293,7 @@ export namespace auth {
 import { get as api_config_get_get } from "~backend/config/get";
 import { searchUnsplash as api_config_search_unsplash_searchUnsplash } from "~backend/config/search_unsplash";
 import { update as api_config_update_update } from "~backend/config/update";
+import { uploadAvatar as api_config_upload_avatar_uploadAvatar } from "~backend/config/upload_avatar";
 import { verifyDomain as api_config_verify_domain_verifyDomain } from "~backend/config/verify_domain";
 
 export namespace config {
@@ -305,6 +306,7 @@ export namespace config {
             this.get = this.get.bind(this)
             this.searchUnsplash = this.searchUnsplash.bind(this)
             this.update = this.update.bind(this)
+            this.uploadAvatar = this.uploadAvatar.bind(this)
             this.verifyDomain = this.verifyDomain.bind(this)
         }
 
@@ -339,6 +341,15 @@ export namespace config {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/config`, {method: "PUT", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_update_update>
+        }
+
+        /**
+         * Uploads an avatar image to storage and returns the public URL.
+         */
+        public async uploadAvatar(params: RequestType<typeof api_config_upload_avatar_uploadAvatar>): Promise<ResponseType<typeof api_config_upload_avatar_uploadAvatar>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/config/upload/avatar`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_upload_avatar_uploadAvatar>
         }
 
         /**

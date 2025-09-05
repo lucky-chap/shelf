@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -213,7 +213,7 @@ function LinksManagementContent() {
     },
   });
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       title: "",
       url: "",
@@ -224,7 +224,7 @@ function LinksManagementContent() {
       startDate: "",
       endDate: ""
     });
-  };
+  }, []);
 
   const formatDateForInput = (date: Date | null) => {
     if (!date) return "";
@@ -237,7 +237,7 @@ function LinksManagementContent() {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const handleEdit = (link: any) => {
+  const handleEdit = useCallback((link: any) => {
     setEditingLink(link);
     setFormData({
       title: link.title,
@@ -250,7 +250,11 @@ function LinksManagementContent() {
       endDate: formatDateForInput(link.endDate)
     });
     setIsEditDialogOpen(true);
-  };
+  }, []);
+
+  const handleInputChange = useCallback((field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -357,7 +361,7 @@ function LinksManagementContent() {
           id="title"
           placeholder="My Awesome Link"
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          onChange={(e) => handleInputChange("title", e.target.value)}
           required
         />
       </div>
@@ -368,7 +372,7 @@ function LinksManagementContent() {
           id="url"
           placeholder="https://example.com"
           value={formData.url}
-          onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+          onChange={(e) => handleInputChange("url", e.target.value)}
           required
         />
       </div>
@@ -379,7 +383,7 @@ function LinksManagementContent() {
           id="description"
           placeholder="Optional description..."
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) => handleInputChange("description", e.target.value)}
         />
       </div>
 
@@ -389,7 +393,7 @@ function LinksManagementContent() {
           id="iconUrl"
           placeholder="https://example.com/icon.png"
           value={formData.iconUrl}
-          onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
+          onChange={(e) => handleInputChange("iconUrl", e.target.value)}
         />
       </div>
 
@@ -405,7 +409,7 @@ function LinksManagementContent() {
               id="startDate"
               type="datetime-local"
               value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              onChange={(e) => handleInputChange("startDate", e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
               Link will be hidden until this date
@@ -418,7 +422,7 @@ function LinksManagementContent() {
               id="endDate"
               type="datetime-local"
               value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              onChange={(e) => handleInputChange("endDate", e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
               Link will be hidden after this date
@@ -435,12 +439,12 @@ function LinksManagementContent() {
               id="backgroundColor"
               type="color"
               value={formData.backgroundColor}
-              onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+              onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
               className="w-16 h-10"
             />
             <Input
               value={formData.backgroundColor}
-              onChange={(e) => setFormData({ ...formData, backgroundColor: e.target.value })}
+              onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
               placeholder="#FFFFFF"
             />
           </div>
@@ -453,12 +457,12 @@ function LinksManagementContent() {
               id="textColor"
               type="color"
               value={formData.textColor}
-              onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
+              onChange={(e) => handleInputChange("textColor", e.target.value)}
               className="w-16 h-10"
             />
             <Input
               value={formData.textColor}
-              onChange={(e) => setFormData({ ...formData, textColor: e.target.value })}
+              onChange={(e) => handleInputChange("textColor", e.target.value)}
               placeholder="#000000"
             />
           </div>
