@@ -1,5 +1,6 @@
 import { api, APIError } from "encore.dev/api";
 import { Query } from "encore.dev/api";
+import { unsplashAccessKey } from "../store/config"
 
 /**
  * Reads a non-empty environment variable.
@@ -60,7 +61,8 @@ export interface SearchUnsplashResponse {
 export const searchUnsplash = api<SearchUnsplashParams, SearchUnsplashResponse>(
   { expose: true, method: "GET", path: "/config/unsplash/search" },
   async ({ query, page = 1 }) => {
-    const accessKey = readEnv("UNSPLASH_ACCESS_KEY") || readEncoreSecret("UNSPLASH_ACCESS_KEY");
+    // const accessKey = readEnv("UNSPLASH_ACCESS_KEY") || readEncoreSecret("UNSPLASH_ACCESS_KEY");
+    const accessKey = unsplashAccessKey();
     if (!accessKey) {
       throw APIError.failedPrecondition("Unsplash access key not configured (UNSPLASH_ACCESS_KEY)");
     }
