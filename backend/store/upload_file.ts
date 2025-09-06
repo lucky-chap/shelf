@@ -18,15 +18,16 @@ export const uploadFile = api<UploadFileRequest, UploadFileResponse>(
     expose: true,
     method: "POST",
     path: "/store/upload/file",
+    bodyLimit: null,
   },
   async (req) => {
     if (!req.fileName || !req.fileContent) {
       throw APIError.invalidArgument("fileName and fileContent are required");
     }
 
-    if (req.fileContent.length > 10 * 1024 * 1024) {
-      throw APIError.invalidArgument("File size exceeds 10MB limit");
-    }
+    // if (req.fileContent.length > 10 * 1024 * 1024) {
+    //   throw APIError.invalidArgument("File size exceeds 10MB limit");
+    // }
 
     try {
       // Decode base64 content

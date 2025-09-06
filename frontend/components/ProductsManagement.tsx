@@ -58,8 +58,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { isStripeConfigured } from "../config";
 import React from "react";
 import backend from "~backend/client";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import { truncateMiddle } from "@/utils/tools";
 
 interface ProductFormData {
   title: string;
@@ -191,7 +190,9 @@ const ProductForm = React.memo<ProductFormProps>(
               <div className="p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{formData.fileName}</span>
+                  <span className="font-medium line-clamp-1">
+                    {truncateMiddle(formData.fileName, 20)}
+                  </span>
                   <Badge variant="secondary">
                     {formatFileSize(formData.fileSize)}
                   </Badge>
@@ -312,6 +313,10 @@ function ProductsManagementContent() {
             const result = await backend.store.uploadFile({
               fileName: file.name,
               fileContent: base64Content,
+              // headers: {
+              //   "Content-Type": file.type,
+              //   "Content-Length": file.size.toString(),
+              // },
             });
             resolve(result);
           } catch (error) {
@@ -523,18 +528,8 @@ function ProductsManagementContent() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        // check file size
-        if (file.size > MAX_FILE_SIZE) {
-          toast({
-            title: "File Size Exceeded",
-            description: "File size must be less than 10MB.",
-            variant: "destructive",
-          });
-          return;
-        } else {
-          setFileUpload({ file, uploading: true });
-          uploadFileMutation.mutate(file);
-        }
+        setFileUpload({ file, uploading: true });
+        uploadFileMutation.mutate(file);
       }
     },
     [uploadFileMutation]
