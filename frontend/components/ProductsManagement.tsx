@@ -204,7 +204,7 @@ const ProductForm = React.memo<ProductFormProps>(({
     <DialogFooter>
       <Button 
         type="submit" 
-        disabled={isSubmitting || !formData.fileUrl}
+        disabled={isSubmitting || (!editingProduct && !formData.fileUrl)}
         className="w-full"
       >
         {isSubmitting ? (
@@ -527,10 +527,10 @@ function ProductsManagementContent() {
 
   const handleEditSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.fileUrl || !editingProduct) {
+    if (!formData.title || !editingProduct) {
       toast({
         title: "Missing Information",
-        description: "Title and file are required.",
+        description: "Title is required.",
         variant: "destructive",
       });
       return;
