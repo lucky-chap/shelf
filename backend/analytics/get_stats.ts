@@ -57,7 +57,10 @@ export const getStats = api<void, AnalyticsStats>(
     `;
 
     // Get guest entry stats
-    const guestStats = await analyticsDB.queryRow<{ total: string; pending: string }>`
+    const guestStats = await analyticsDB.queryRow<{
+      total: string;
+      pending: string;
+    }>`
       SELECT 
         COALESCE(COUNT(*), 0)::text as total,
         COALESCE(SUM(CASE WHEN is_approved = false THEN 1 ELSE 0 END), 0)::text as pending
@@ -65,7 +68,10 @@ export const getStats = api<void, AnalyticsStats>(
     `;
 
     // Get page view stats
-    const pageViewStats = await analyticsDB.queryRow<{ totalViews: string; uniqueVisitors: string }>`
+    const pageViewStats = await analyticsDB.queryRow<{
+      totalViews: string;
+      uniqueVisitors: string;
+    }>`
       SELECT 
         COALESCE(COUNT(*), 0)::text as "totalViews",
         COALESCE(COUNT(DISTINCT visitor_id), 0)::text as "uniqueVisitors"
@@ -73,13 +79,19 @@ export const getStats = api<void, AnalyticsStats>(
     `;
 
     // Get social referral stats
-    const socialStats = await analyticsDB.queryRow<{ totalSocialReferrals: string }>`
+    const socialStats = await analyticsDB.queryRow<{
+      totalSocialReferrals: string;
+    }>`
       SELECT COALESCE(COUNT(*), 0)::text as "totalSocialReferrals"
       FROM social_referrals 
     `;
 
     // Get top links
-    const topLinks = await analyticsDB.queryAll<{ id: number; title: string; clickCount: number }>`
+    const topLinks = await analyticsDB.queryAll<{
+      id: number;
+      title: string;
+      clickCount: number;
+    }>`
       SELECT id, title, click_count as "clickCount"
       FROM links 
       WHERE click_count > 0
@@ -88,7 +100,10 @@ export const getStats = api<void, AnalyticsStats>(
     `;
 
     // Recent activity (last 20 activities)
-    const recentPageViews = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
+    const recentPageViews = await analyticsDB.queryAll<{
+      description: string;
+      timestamp: Date;
+    }>`
       SELECT 
         CONCAT('Page view from ', COALESCE(country, 'Unknown'), ' (', device_type, ')') as description,
         created_at as timestamp
@@ -97,7 +112,10 @@ export const getStats = api<void, AnalyticsStats>(
       LIMIT 8
     `;
 
-    const recentLinkClicks = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
+    const recentLinkClicks = await analyticsDB.queryAll<{
+      description: string;
+      timestamp: Date;
+    }>`
       SELECT 
         CONCAT('Link clicked: ', l.title) as description,
         lc.created_at as timestamp
@@ -107,7 +125,10 @@ export const getStats = api<void, AnalyticsStats>(
       LIMIT 8
     `;
 
-    const recentGuestEntries = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
+    const recentGuestEntries = await analyticsDB.queryAll<{
+      description: string;
+      timestamp: Date;
+    }>`
       SELECT 
         CONCAT('Guest entry from ', COALESCE(nickname, 'Anonymous')) as description,
         created_at as timestamp
@@ -116,7 +137,10 @@ export const getStats = api<void, AnalyticsStats>(
       LIMIT 4
     `;
 
-    const recentSocialReferrals = await analyticsDB.queryAll<{ description: string; timestamp: Date }>`
+    const recentSocialReferrals = await analyticsDB.queryAll<{
+      description: string;
+      timestamp: Date;
+    }>`
       SELECT 
         CONCAT('Visitor from ', platform) as description,
         created_at as timestamp
@@ -127,14 +151,34 @@ export const getStats = api<void, AnalyticsStats>(
 
     // Combine and sort all activities
     const allActivities = [
-      ...recentPageViews.map(item => ({ ...item, type: "page_view" as const })),
-      ...recentLinkClicks.map(item => ({ ...item, type: "link_click" as const })),
-      ...recentGuestEntries.map(item => ({ ...item, type: "guest_entry" as const })),
-      ...recentSocialReferrals.map(item => ({ ...item, type: "social_referral" as const }))
-    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 15);
+      ...recentPageViews.map((item) => ({
+        ...item,
+        type: "page_view" as const,
+      })),
+      ...recentLinkClicks.map((item) => ({
+        ...item,
+        type: "link_click" as const,
+      })),
+      ...recentGuestEntries.map((item) => ({
+        ...item,
+        type: "guest_entry" as const,
+      })),
+      ...recentSocialReferrals.map((item) => ({
+        ...item,
+        type: "social_referral" as const,
+      })),
+    ]
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )
+      .slice(0, 15);
 
     // Device statistics
-    const deviceStats = await analyticsDB.queryAll<{ device: string; count: number }>`
+    const deviceStats = await analyticsDB.queryAll<{
+      device: string;
+      count: number;
+    }>`
       SELECT 
         COALESCE(device_type, 'Unknown') as device,
         COUNT(*)::integer as count
@@ -143,14 +187,23 @@ export const getStats = api<void, AnalyticsStats>(
       ORDER BY count DESC
     `;
 
-    const totalDeviceViews = deviceStats.reduce((sum, stat) => sum + stat.count, 0);
-    const deviceStatsWithPercentage = deviceStats.map(stat => ({
+    const totalDeviceViews = deviceStats.reduce(
+      (sum, stat) => sum + stat.count,
+      0
+    );
+    const deviceStatsWithPercentage = deviceStats.map((stat) => ({
       ...stat,
-      percentage: totalDeviceViews > 0 ? Math.round((stat.count / totalDeviceViews) * 100) : 0
+      percentage:
+        totalDeviceViews > 0
+          ? Math.round((stat.count / totalDeviceViews) * 100)
+          : 0,
     }));
 
     // Location statistics
-    const locationStats = await analyticsDB.queryAll<{ country: string; count: number }>`
+    const locationStats = await analyticsDB.queryAll<{
+      country: string;
+      count: number;
+    }>`
       SELECT 
         COALESCE(country, 'Unknown') as country,
         COUNT(*)::integer as count
@@ -161,14 +214,24 @@ export const getStats = api<void, AnalyticsStats>(
       LIMIT 10
     `;
 
-    const totalLocationViews = locationStats.reduce((sum, stat) => sum + stat.count, 0);
-    const locationStatsWithPercentage = locationStats.map(stat => ({
+    const totalLocationViews = locationStats.reduce(
+      (sum, stat) => sum + stat.count,
+      0
+    );
+    // console.log("location stats on server: ", locationStats);
+    const locationStatsWithPercentage = locationStats.map((stat) => ({
       ...stat,
-      percentage: totalLocationViews > 0 ? Math.round((stat.count / totalLocationViews) * 100) : 0
+      percentage:
+        totalLocationViews > 0
+          ? Math.round((stat.count / totalLocationViews) * 100)
+          : 0,
     }));
 
     // Social media statistics
-    const socialPlatformStats = await analyticsDB.queryAll<{ platform: string; count: number }>`
+    const socialPlatformStats = await analyticsDB.queryAll<{
+      platform: string;
+      count: number;
+    }>`
       SELECT 
         platform,
         COUNT(*)::integer as count
@@ -177,14 +240,24 @@ export const getStats = api<void, AnalyticsStats>(
       ORDER BY count DESC
     `;
 
-    const totalSocialReferrals = socialPlatformStats.reduce((sum, stat) => sum + stat.count, 0);
-    const socialStatsWithPercentage = socialPlatformStats.map(stat => ({
+    const totalSocialReferrals = socialPlatformStats.reduce(
+      (sum, stat) => sum + stat.count,
+      0
+    );
+    const socialStatsWithPercentage = socialPlatformStats.map((stat) => ({
       ...stat,
-      percentage: totalSocialReferrals > 0 ? Math.round((stat.count / totalSocialReferrals) * 100) : 0
+      percentage:
+        totalSocialReferrals > 0
+          ? Math.round((stat.count / totalSocialReferrals) * 100)
+          : 0,
     }));
 
     // Hourly activity (24 hours)
-    const hourlyActivity = await analyticsDB.queryAll<{ hour: number; views: number; clicks: number }>`
+    const hourlyActivity = await analyticsDB.queryAll<{
+      hour: number;
+      views: number;
+      clicks: number;
+    }>`
       WITH hours AS (
         SELECT generate_series(0, 23) as hour
       ),
@@ -215,7 +288,12 @@ export const getStats = api<void, AnalyticsStats>(
     `;
 
     // Daily activity (last 30 days)
-    const dailyActivity = await analyticsDB.queryAll<{ date: string; views: number; clicks: number; uniqueVisitors: number }>`
+    const dailyActivity = await analyticsDB.queryAll<{
+      date: string;
+      views: number;
+      clicks: number;
+      uniqueVisitors: number;
+    }>`
       WITH dates AS (
         SELECT generate_series(
           CURRENT_DATE - INTERVAL '29 days',
@@ -264,7 +342,7 @@ export const getStats = api<void, AnalyticsStats>(
       locationStats: locationStatsWithPercentage,
       socialStats: socialStatsWithPercentage,
       hourlyActivity,
-      dailyActivity
+      dailyActivity,
     };
   }
 );
