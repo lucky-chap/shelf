@@ -291,8 +291,7 @@ function LandingPageContent() {
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <Avatar
-                    className={`h-24 w-24 ring-2 ring-offset-2 ring-[${config.themeColor}]`}
-                    // style={{ ringColor: config.themeColor }}
+                    className={`h-24 w-24 ring-2 ring-offset-2 ${config.themeColor}`}
                   >
                     <AvatarImage src={config.avatarUrl || undefined} />
                     <AvatarFallback className="text-lg">
