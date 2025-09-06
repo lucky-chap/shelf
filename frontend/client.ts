@@ -96,11 +96,13 @@ export interface ClientOptions {
 /**
  * Import the endpoint handlers to derive the types for the client.
  */
+import { getActiveUsers as api_analytics_get_active_users_getActiveUsers } from "~backend/analytics/get_active_users";
 import { getLinkHeatmap as api_analytics_get_link_heatmap_getLinkHeatmap } from "~backend/analytics/get_link_heatmap";
 import { getStats as api_analytics_get_stats_getStats } from "~backend/analytics/get_stats";
 import { trackLinkClick as api_analytics_track_link_click_trackLinkClick } from "~backend/analytics/track_link_click";
 import { trackPageView as api_analytics_track_page_view_trackPageView } from "~backend/analytics/track_page_view";
 import { trackSocialReferral as api_analytics_track_social_referral_trackSocialReferral } from "~backend/analytics/track_social_referral";
+import { trackUserActivity as api_analytics_track_user_activity_trackUserActivity } from "~backend/analytics/track_user_activity";
 
 export namespace analytics {
 
@@ -109,11 +111,22 @@ export namespace analytics {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.getActiveUsers = this.getActiveUsers.bind(this)
             this.getLinkHeatmap = this.getLinkHeatmap.bind(this)
             this.getStats = this.getStats.bind(this)
             this.trackLinkClick = this.trackLinkClick.bind(this)
             this.trackPageView = this.trackPageView.bind(this)
             this.trackSocialReferral = this.trackSocialReferral.bind(this)
+            this.trackUserActivity = this.trackUserActivity.bind(this)
+        }
+
+        /**
+         * Retrieves the number of currently active users on the landing page.
+         */
+        public async getActiveUsers(): Promise<ResponseType<typeof api_analytics_get_active_users_getActiveUsers>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/analytics/active-users`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_get_active_users_getActiveUsers>
         }
 
         /**
@@ -203,6 +216,26 @@ export namespace analytics {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/analytics/social-referral`, {headers, method: "POST", body: JSON.stringify(body)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_track_social_referral_trackSocialReferral>
+        }
+
+        /**
+         * Tracks user activity to maintain active users count.
+         */
+        public async trackUserActivity(params: RequestType<typeof api_analytics_track_user_activity_trackUserActivity>): Promise<ResponseType<typeof api_analytics_track_user_activity_trackUserActivity>> {
+            // Convert our params into the objects we need for the request
+            const headers = makeRecord<string, string>({
+                "user-agent": params.userAgent,
+            })
+
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                page:      params.page,
+                visitorId: params.visitorId,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/analytics/user-activity`, {headers, method: "POST", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_track_user_activity_trackUserActivity>
         }
     }
 }
@@ -294,7 +327,6 @@ import { get as api_config_get_get } from "~backend/config/get";
 import { searchUnsplash as api_config_search_unsplash_searchUnsplash } from "~backend/config/search_unsplash";
 import { update as api_config_update_update } from "~backend/config/update";
 import { uploadAvatar as api_config_upload_avatar_uploadAvatar } from "~backend/config/upload_avatar";
-import { verifyDomain as api_config_verify_domain_verifyDomain } from "~backend/config/verify_domain";
 
 export namespace config {
 
@@ -307,7 +339,6 @@ export namespace config {
             this.searchUnsplash = this.searchUnsplash.bind(this)
             this.update = this.update.bind(this)
             this.uploadAvatar = this.uploadAvatar.bind(this)
-            this.verifyDomain = this.verifyDomain.bind(this)
         }
 
         /**
@@ -350,15 +381,6 @@ export namespace config {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/config/upload/avatar`, {method: "POST", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_upload_avatar_uploadAvatar>
-        }
-
-        /**
-         * Verifies domain DNS configuration and ownership.
-         */
-        public async verifyDomain(params: RequestType<typeof api_config_verify_domain_verifyDomain>): Promise<ResponseType<typeof api_config_verify_domain_verifyDomain>> {
-            // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/config/verify-domain`, {method: "POST", body: JSON.stringify(params)})
-            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_config_verify_domain_verifyDomain>
         }
     }
 }

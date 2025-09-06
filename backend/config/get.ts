@@ -8,7 +8,6 @@ export interface SiteConfig {
   backgroundColor: string;
   textColor: string;
   avatarUrl: string | null;
-  customDomain: string | null;
   backgroundType: string;
   backgroundImageUrl: string | null;
   selectedTheme: string | null;
@@ -27,7 +26,6 @@ export const get = api<void, SiteConfig>(
         background_color as "backgroundColor", 
         text_color as "textColor", 
         owner_avatar_url as "avatarUrl",
-        custom_domain as "customDomain",
         COALESCE(background_type, 'solid') as "backgroundType",
         background_image_url as "backgroundImageUrl",
         selected_theme as "selectedTheme",
@@ -45,7 +43,6 @@ export const get = api<void, SiteConfig>(
         backgroundColor: "#FFFFFF",
         textColor: "#000000",
         avatarUrl: null,
-        customDomain: null,
         backgroundType: "solid",
         backgroundImageUrl: null,
         selectedTheme: null,

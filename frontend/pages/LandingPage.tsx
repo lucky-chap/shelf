@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,10 @@ import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
 import SocialShare from "../components/SocialShare";
 import ProductsSection from "../components/ProductsSection";
+import ActiveUsersCounter from "../components/ActiveUsersCounter";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { trackPageView } from "../utils/analytics";
+import { trackPageView, generateVisitorId } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
 import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
@@ -20,6 +21,7 @@ import { useStripeKey } from "../utils/hooks"
 
 function LandingPageContent() {
   const { data, isLoading, isError } = useStripeKey();
+  
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
@@ -34,9 +36,32 @@ function LandingPageContent() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Track page view when component mounts
+  // Track user activity for active users counter
+  const trackActivityMutation = useMutation({
+    mutationFn: async () => {
+      const visitorId = generateVisitorId();
+      return await backend.analytics.trackUserActivity({ 
+        visitorId,
+        page: '/'
+      });
+    },
+    onError: (error: any) => {
+      console.error("Failed to track user activity:", error);
+    },
+  });
+
+  // Track page view and user activity when component mounts
   useEffect(() => {
     trackPageView('/');
+    trackActivityMutation.mutate();
+    
+    // Set up interval to track activity every 2 minutes while user is on page
+    const activityInterval = setInterval(() => {
+      trackActivityMutation.mutate();
+    }, 120000); // 2 minutes
+
+    // Clean up interval on unmount
+    return () => clearInterval(activityInterval);
   }, []);
 
   if (configQuery.isLoading) {
@@ -215,19 +240,22 @@ function LandingPageContent() {
       >
         <div className={`${getLayoutContainerClass()} mx-auto px-4 py-8`}>
           <div className={`space-y-8 layout-${selectedLayout?.id || 'default'}`}>
-            {/* Header with Admin Access */}
-            <div className="flex justify-between mb-4">
-              <Link to="/store">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
-                  style={getButtonStyles()}
-                >
-                  <ShoppingBag className="h-4 w-4" />
-                  Store
-                </Button>
-              </Link>
+            {/* Header with Admin Access and Active Users */}
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <Link to="/store">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
+                    style={getButtonStyles()}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Store
+                  </Button>
+                </Link>
+                <ActiveUsersCounter />
+              </div>
               <Link to="/admin">
                 <Button 
                   variant="outline" 
@@ -257,16 +285,6 @@ function LandingPageContent() {
                       {config.title}
                     </h1>
                     <p className="text-muted-foreground mt-2">{config.description}</p>
-                    {/* {selectedThemePreset && (
-                      <p className="text-xs text-muted-foreground mt-1 opacity-60">
-                        {selectedThemePreset.name} Theme
-                      </p>
-                    )} */}
-                    {/* {selectedLayout && selectedLayout.id !== "default" && (
-                      <p className="text-xs text-muted-foreground mt-1 opacity-60">
-                        {selectedLayout.name} Layout
-                      </p>
-                    )} */}
                   </div>
                 </div>
               </CardContent>

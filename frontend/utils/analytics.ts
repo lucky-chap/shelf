@@ -28,3 +28,20 @@ export async function trackPageView(page: string) {
     console.error('Failed to track page view:', error);
   }
 }
+
+// Track user activity for active users counter
+export async function trackUserActivity(page: string = '/') {
+  try {
+    const visitorId = generateVisitorId();
+    
+    // Import backend client dynamically to avoid circular dependencies
+    const { default: backend } = await import('~backend/client');
+    
+    await backend.analytics.trackUserActivity({
+      visitorId,
+      page
+    });
+  } catch (error) {
+    console.error('Failed to track user activity:', error);
+  }
+}

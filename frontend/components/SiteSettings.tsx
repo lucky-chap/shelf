@@ -8,11 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Settings, Save, Globe, Palette, Image, Upload, Layout } from "lucide-react";
+import { Settings, Save, Palette, Image, Upload, Layout } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ThemePresetSelector, { ThemePreset, themePresets } from "./ThemePresetSelector";
 import UnsplashImageSearch from "./UnsplashImageSearch";
-import DomainConfiguration from "./DomainConfiguration";
 import LayoutSelector from "./LayoutSelector";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
@@ -28,7 +27,6 @@ function SiteSettingsContent() {
     backgroundColor: "#FFFFFF",
     textColor: "#000000",
     avatarUrl: "",
-    customDomain: "",
     backgroundType: "solid" as "solid" | "unsplash" | "upload",
     backgroundImageUrl: "",
     selectedTheme: "" as string,
@@ -118,10 +116,6 @@ function SiteSettingsContent() {
         updateData.avatarUrl = data.avatarUrl.trim();
       }
 
-      if (data.customDomain && data.customDomain.trim()) {
-        updateData.customDomain = data.customDomain.trim();
-      }
-
       if (data.backgroundImageUrl && data.backgroundImageUrl.trim()) {
         updateData.backgroundImageUrl = data.backgroundImageUrl.trim();
       }
@@ -172,7 +166,6 @@ function SiteSettingsContent() {
         backgroundColor: configQuery.data.backgroundColor,
         textColor: configQuery.data.textColor,
         avatarUrl: configQuery.data.avatarUrl || "",
-        customDomain: configQuery.data.customDomain || "",
         backgroundType: nextBackgroundType,
         backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
         selectedTheme: configQuery.data.selectedTheme || "",
@@ -224,17 +217,6 @@ function SiteSettingsContent() {
       ...prev,
       layoutType
     }));
-  };
-
-  const handleDomainChange = (domain: string | null) => {
-    const updatedFormData = {
-      ...formData,
-      customDomain: domain || ""
-    };
-    setFormData(updatedFormData);
-    
-    // Auto-save domain changes
-    updateConfigMutation.mutate(updatedFormData);
   };
 
   const handleBackgroundTypeChange = (type: "solid" | "unsplash" | "upload") => {
@@ -318,7 +300,7 @@ function SiteSettingsContent() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             General
@@ -330,10 +312,6 @@ function SiteSettingsContent() {
           <TabsTrigger value="layout" className="flex items-center gap-2">
             <Layout className="h-4 w-4" />
             Layout
-          </TabsTrigger>
-          <TabsTrigger value="domain" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            Domain
           </TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
@@ -488,10 +466,6 @@ function SiteSettingsContent() {
                       <Label htmlFor="unsplash">Unsplash Image</Label>
                     </div>
                   )}
-                  {/* <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="upload" id="upload" />
-                    <Label htmlFor="upload">Custom Upload (Coming Soon)</Label>
-                  </div> */}
                 </RadioGroup>
               </div>
 
@@ -607,13 +581,6 @@ function SiteSettingsContent() {
           />
         </TabsContent>
 
-        <TabsContent value="domain">
-          <DomainConfiguration 
-            currentDomain={formData.customDomain || null}
-            onDomainChange={handleDomainChange}
-          />
-        </TabsContent>
-
         <TabsContent value="preview">
           <Card>
             <CardHeader>
@@ -657,11 +624,6 @@ function SiteSettingsContent() {
                       <p className="text-sm opacity-75 mt-1">
                         {formData.description || "Site description"}
                       </p>
-                      {formData.customDomain && (
-                        <p className="text-xs opacity-60 mt-2">
-                          Available at: {formData.customDomain}
-                        </p>
-                      )}
                       {formData.selectedTheme && (
                         <p className="text-xs opacity-60 mt-1">
                           Theme: {themePresets.find(t => t.id === formData.selectedTheme)?.name}
