@@ -32,7 +32,7 @@ export default function ActiveUsersCounter() {
     >
       <Users className="h-3 w-3" />
       <span className="text-xs">
-        {activeUsers} {activeUsers === 1 ? 'user' : 'users'} online
+        {activeUsers} {activeUsers === 1 ? 'person' : 'people'} here
       </span>
     </Badge>
   );
