@@ -1,24 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  BarChart3,
-  MessageSquare,
-  ExternalLink,
-  Eye,
-  Users,
-  Globe,
-  Smartphone,
-  TrendingUp,
-  Share2,
-} from "lucide-react";
+import { BarChart3, MessageSquare, ExternalLink, Eye, Users, Globe, Smartphone, TrendingUp, Share2 } from "lucide-react";
 import { StatsLoadingSkeleton, CardLoadingSkeleton } from "./LoadingSkeleton";
 import ErrorBoundary from "./ErrorBoundary";
 import VisitorChart from "./VisitorChart";
@@ -58,13 +42,9 @@ function AnalyticsContent() {
       <Card className="border-destructive">
         <CardContent className="text-center py-12">
           <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">
-            Failed to load analytics data
-          </p>
+          <p className="text-muted-foreground mb-4">Failed to load analytics data</p>
           <p className="text-sm text-destructive">
-            {statsQuery.error instanceof Error
-              ? statsQuery.error.message
-              : "An unexpected error occurred"}
+            {statsQuery.error instanceof Error ? statsQuery.error.message : "An unexpected error occurred"}
           </p>
         </CardContent>
       </Card>
@@ -93,8 +73,6 @@ function AnalyticsContent() {
   const hourlyActivity = stats.hourlyActivity || [];
   const dailyActivity = stats.dailyActivity || [];
 
-  console.log("location stats: ", stats.locationStats);
-
   return (
     <div className="space-y-6">
       {/* Overview Stats */}
@@ -105,23 +83,17 @@ function AnalyticsContent() {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(stats.totalPageViews || 0).toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">{(stats.totalPageViews || 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Unique Visitors
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Unique Visitors</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(stats.uniqueVisitors || 0).toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">{(stats.uniqueVisitors || 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -131,37 +103,27 @@ function AnalyticsContent() {
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(stats.totalLinkClicks || 0).toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">{(stats.totalLinkClicks || 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Social Referrals
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Social Referrals</CardTitle>
             <Share2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(stats.totalSocialReferrals || 0).toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">{(stats.totalSocialReferrals || 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Guest Messages
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Guest Messages</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.totalGuestEntries || 0}
-            </div>
+            <div className="text-2xl font-bold">{(stats.totalGuestEntries || 0)}</div>
             {(stats.pendingGuestEntries || 0) > 0 && (
               <Badge variant="secondary" className="mt-1">
                 {stats.pendingGuestEntries} pending
@@ -188,22 +150,15 @@ function AnalyticsContent() {
               </CardHeader>
               <CardContent>
                 {topLinks.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No link clicks yet
-                  </p>
+                  <p className="text-muted-foreground text-center py-4">No link clicks yet</p>
                 ) : (
                   <div className="space-y-3">
                     {topLinks.map((link) => (
-                      <div
-                        key={link.id}
-                        className="flex items-center justify-between"
-                      >
+                      <div key={link.id} className="flex items-center justify-between">
                         <div className="truncate">
                           <div className="font-medium">{link.title}</div>
                         </div>
-                        <Badge variant="secondary">
-                          {link.clickCount} clicks
-                        </Badge>
+                        <Badge variant="secondary">{link.clickCount} clicks</Badge>
                       </div>
                     ))}
                   </div>
@@ -218,32 +173,17 @@ function AnalyticsContent() {
               </CardHeader>
               <CardContent>
                 {recentActivity.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No recent activity
-                  </p>
+                  <p className="text-muted-foreground text-center py-4">No recent activity</p>
                 ) : (
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {recentActivity.map((activity, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          {activity.type === "page_view" && (
-                            <Eye className="h-4 w-4 text-blue-500" />
-                          )}
-                          {activity.type === "link_click" && (
-                            <ExternalLink className="h-4 w-4 text-green-500" />
-                          )}
-                          {activity.type === "guest_entry" && (
-                            <MessageSquare className="h-4 w-4 text-purple-500" />
-                          )}
-                          {activity.type === "social_referral" && (
-                            <Share2 className="h-4 w-4 text-orange-500" />
-                          )}
-                          <span className="text-sm">
-                            {activity.description}
-                          </span>
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3"> 
+                          {activity.type === "page_view" && <Eye className="h-4 w-4 text-blue-500" />}
+                          {activity.type === "link_click" && <ExternalLink className="h-4 w-4 text-green-500" />}
+                          {activity.type === "guest_entry" && <MessageSquare className="h-4 w-4 text-purple-500" />}
+                          {activity.type === "social_referral" && <Share2 className="h-4 w-4 text-orange-500" />}
+                          <span className="text-sm">{activity.description}</span>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {new Date(activity.timestamp).toLocaleDateString()}
@@ -258,7 +198,10 @@ function AnalyticsContent() {
         </TabsContent>
 
         <TabsContent value="traffic" className="space-y-6">
-          <VisitorChart hourlyData={hourlyActivity} dailyData={dailyActivity} />
+          <VisitorChart 
+            hourlyData={hourlyActivity}
+            dailyData={dailyActivity}
+          />
         </TabsContent>
 
         <TabsContent value="audience" className="space-y-6">
@@ -273,16 +216,11 @@ function AnalyticsContent() {
               </CardHeader>
               <CardContent>
                 {deviceStats.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No device data yet
-                  </p>
+                  <p className="text-muted-foreground text-center py-4">No device data yet</p>
                 ) : (
                   <div className="space-y-3">
                     {deviceStats.map((device) => (
-                      <div
-                        key={device.device}
-                        className="flex items-center justify-between"
-                      >
+                      <div key={device.device} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="font-medium">{device.device}</div>
                           <div className="text-sm text-muted-foreground">
@@ -290,12 +228,10 @@ function AnalyticsContent() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium">
-                            {device.percentage}%
-                          </div>
+                          <div className="text-sm font-medium">{device.percentage}%</div>
                           <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full"
+                            <div 
+                              className="h-full bg-primary rounded-full" 
                               style={{ width: `${device.percentage}%` }}
                             />
                           </div>
@@ -317,16 +253,11 @@ function AnalyticsContent() {
               </CardHeader>
               <CardContent>
                 {locationStats.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No location data yet
-                  </p>
+                  <p className="text-muted-foreground text-center py-4">No location data yet</p>
                 ) : (
                   <div className="space-y-3">
                     {locationStats.map((location) => (
-                      <div
-                        key={location.country}
-                        className="flex items-center justify-between"
-                      >
+                      <div key={location.country} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="font-medium">{location.country}</div>
                           <div className="text-sm text-muted-foreground">
@@ -334,12 +265,10 @@ function AnalyticsContent() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium">
-                            {location.percentage}%
-                          </div>
+                          <div className="text-sm font-medium">{location.percentage}%</div>
                           <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full"
+                            <div 
+                              className="h-full bg-primary rounded-full" 
                               style={{ width: `${location.percentage}%` }}
                             />
                           </div>
@@ -361,31 +290,22 @@ function AnalyticsContent() {
               </CardHeader>
               <CardContent>
                 {socialStats.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No social referrals yet
-                  </p>
+                  <p className="text-muted-foreground text-center py-4">No social referrals yet</p>
                 ) : (
                   <div className="space-y-3">
                     {socialStats.map((social) => (
-                      <div
-                        key={social.platform}
-                        className="flex items-center justify-between"
-                      >
+                      <div key={social.platform} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="font-medium capitalize">
-                            {social.platform}
-                          </div>
+                          <div className="font-medium capitalize">{social.platform}</div>
                           <div className="text-sm text-muted-foreground">
                             {social.count} referrals
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium">
-                            {social.percentage}%
-                          </div>
+                          <div className="text-sm font-medium">{social.percentage}%</div>
                           <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full"
+                            <div 
+                              className="h-full bg-primary rounded-full" 
                               style={{ width: `${social.percentage}%` }}
                             />
                           </div>
