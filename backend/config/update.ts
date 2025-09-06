@@ -12,6 +12,7 @@ export interface UpdateSiteConfigRequest {
   backgroundImageUrl?: string;
   selectedTheme?: string;
   layoutType?: string;
+  fontFamily?: string;
 }
 
 export interface SiteConfig {
@@ -25,6 +26,7 @@ export interface SiteConfig {
   backgroundImageUrl: string | null;
   selectedTheme: string | null;
   layoutType: string | null;
+  fontFamily: string | null;
 }
 
 // Updates the site configuration.
@@ -34,12 +36,12 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
     const config = await configDB.queryRow<SiteConfig>`
       INSERT INTO site_config (
         id, site_title, site_description, theme_color, background_color, text_color, 
-        owner_avatar_url, background_type, background_image_url, selected_theme, layout_type
+        owner_avatar_url, background_type, background_image_url, selected_theme, layout_type, font_family
       )
       VALUES (
         1, ${req.title}, ${req.description}, ${req.themeColor}, ${req.backgroundColor}, ${req.textColor}, 
         ${req.avatarUrl || null}, ${req.backgroundType || "solid"}, 
-        ${req.backgroundImageUrl || null}, ${req.selectedTheme || null}, ${req.layoutType || null}
+        ${req.backgroundImageUrl || null}, ${req.selectedTheme || null}, ${req.layoutType || null}, ${req.fontFamily || 'sans-serif'}
       )
       ON CONFLICT (id) DO UPDATE SET
         site_title = EXCLUDED.site_title,
@@ -52,6 +54,7 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
         background_image_url = EXCLUDED.background_image_url,
         selected_theme = EXCLUDED.selected_theme,
         layout_type = EXCLUDED.layout_type,
+        font_family = EXCLUDED.font_family,
         updated_at = NOW()
       RETURNING 
         site_title as title,
@@ -63,7 +66,8 @@ export const update = api<UpdateSiteConfigRequest, SiteConfig>(
         background_type as "backgroundType",
         background_image_url as "backgroundImageUrl",
         selected_theme as "selectedTheme",
-        layout_type as "layoutType"
+        layout_type as "layoutType",
+        font_family as "fontFamily"
     `;
 
     if (!config) {

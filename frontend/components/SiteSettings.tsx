@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Settings, Save, Palette, Image, Upload, Layout } from "lucide-react";
+import { Settings, Save, Palette, Image, Upload, Layout, Type } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import ThemePresetSelector, { ThemePreset, themePresets } from "./ThemePresetSelector";
 import UnsplashImageSearch from "./UnsplashImageSearch";
@@ -18,6 +18,16 @@ import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
 import backend from "~backend/client";
 import { isUnsplashConfigured as isUnsplashConfiguredFrontend } from "../config";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const availableFonts = [
+  { name: "Sans Serif (Default)", value: "Inter, sans-serif" },
+  { name: "Serif", value: "'Merriweather', serif" },
+  { name: "Monospace", value: "'Roboto Mono', monospace" },
+  { name: "Retro Pixel", value: "'VT323', monospace" },
+  { name: "Retro Gaming", value: "'Press Start 2P', cursive" },
+  { name: "Comic Style", value: "'Comic Neue', cursive" },
+];
 
 function SiteSettingsContent() {
   const [formData, setFormData] = useState({
@@ -30,7 +40,8 @@ function SiteSettingsContent() {
     backgroundType: "solid" as "solid" | "unsplash" | "upload",
     backgroundImageUrl: "",
     selectedTheme: "" as string,
-    layoutType: "" as string
+    layoutType: "" as string,
+    fontFamily: "Inter, sans-serif"
   });
   const [avatarUpload, setAvatarUpload] = useState<{
     file: File | null;
@@ -109,6 +120,7 @@ function SiteSettingsContent() {
         backgroundColor: data.backgroundColor,
         textColor: data.textColor,
         backgroundType: data.backgroundType,
+        fontFamily: data.fontFamily,
       };
 
       // Only include optional fields if they have values
@@ -169,7 +181,8 @@ function SiteSettingsContent() {
         backgroundType: nextBackgroundType,
         backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
         selectedTheme: configQuery.data.selectedTheme || "",
-        layoutType: configQuery.data.layoutType || ""
+        layoutType: configQuery.data.layoutType || "",
+        fontFamily: configQuery.data.fontFamily || "Inter, sans-serif"
       });
     }
   }, [configQuery.data, unsplashEnabled]);
@@ -209,6 +222,7 @@ function SiteSettingsContent() {
       backgroundColor: preset.backgroundColor,
       textColor: preset.textColor,
       selectedTheme: preset.id,
+      fontFamily: preset.fontFamily || "Inter, sans-serif",
     }));
   };
 
@@ -492,65 +506,71 @@ function SiteSettingsContent() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Custom Colors</CardTitle>
+              <CardTitle>Customization</CardTitle>
               <CardDescription>
-                Fine-tune your theme colors or override preset selections
+                Fine-tune your theme colors and fonts
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="themeColor">Theme Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="themeColor"
-                      type="color"
-                      value={formData.themeColor}
-                      onChange={(e) => handleInputChange("themeColor", e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.themeColor}
-                      onChange={(e) => handleInputChange("themeColor", e.target.value)}
-                      placeholder="#3B82F6"
-                    />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    Colors
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="themeColor">Theme</Label>
+                      <Input
+                        id="themeColor"
+                        type="color"
+                        value={formData.themeColor}
+                        onChange={(e) => handleInputChange("themeColor", e.target.value)}
+                        className="w-full h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="backgroundColor">Background</Label>
+                      <Input
+                        id="backgroundColor"
+                        type="color"
+                        value={formData.backgroundColor}
+                        onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
+                        className="w-full h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="textColor">Text</Label>
+                      <Input
+                        id="textColor"
+                        type="color"
+                        value={formData.textColor}
+                        onChange={(e) => handleInputChange("textColor", e.target.value)}
+                        className="w-full h-10"
+                      />
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backgroundColor">Background Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="backgroundColor"
-                      type="color"
-                      value={formData.backgroundColor}
-                      onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.backgroundColor}
-                      onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
-                      placeholder="#FFFFFF"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="textColor">Text Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="textColor"
-                      type="color"
-                      value={formData.textColor}
-                      onChange={(e) => handleInputChange("textColor", e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.textColor}
-                      onChange={(e) => handleInputChange("textColor", e.target.value)}
-                      placeholder="#000000"
-                    />
-                  </div>
+                <div className="space-y-4">
+                  <Label className="flex items-center gap-2">
+                    <Type className="h-4 w-4" />
+                    Font
+                  </Label>
+                  <Select
+                    value={formData.fontFamily}
+                    onValueChange={(value) => handleInputChange("fontFamily", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a font" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableFonts.map((font) => (
+                        <SelectItem key={font.value} value={font.value}>
+                          <span style={{ fontFamily: font.value }}>{font.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -600,7 +620,8 @@ function SiteSettingsContent() {
                     : undefined,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat"
+                  backgroundRepeat: "no-repeat",
+                  fontFamily: formData.fontFamily,
                 }}
               >
                 {formData.backgroundType === "unsplash" && formData.backgroundImageUrl && (

@@ -12,6 +12,7 @@ export interface SiteConfig {
   backgroundImageUrl: string | null;
   selectedTheme: string | null;
   layoutType: string | null;
+  fontFamily: string | null;
 }
 
 // Retrieves the site configuration.
@@ -29,7 +30,8 @@ export const get = api<void, SiteConfig>(
         COALESCE(background_type, 'solid') as "backgroundType",
         background_image_url as "backgroundImageUrl",
         selected_theme as "selectedTheme",
-        layout_type as "layoutType"
+        layout_type as "layoutType",
+        font_family as "fontFamily"
       FROM site_config 
       WHERE id = 1
     `;
@@ -46,7 +48,8 @@ export const get = api<void, SiteConfig>(
         backgroundType: "solid",
         backgroundImageUrl: null,
         selectedTheme: null,
-        layoutType: null
+        layoutType: null,
+        fontFamily: "Inter, sans-serif"
       };
     }
 

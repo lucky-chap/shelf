@@ -19,6 +19,7 @@ import { themePresets } from "../components/ThemePresetSelector";
 import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
 import { useStripePublishableKey } from "../utils/hooks";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 function LandingPageContent() {
   const { data, isLoading, isError } = useStripePublishableKey();
@@ -104,6 +105,7 @@ function LandingPageContent() {
     backgroundImageUrl: null,
     selectedTheme: null,
     layoutType: null,
+    fontFamily: "Inter, sans-serif",
   };
 
   // Apply theme preset styles if a theme is selected
@@ -121,6 +123,7 @@ function LandingPageContent() {
     const baseStyles: React.CSSProperties = {
       color: config.textColor,
       minHeight: "100vh",
+      fontFamily: config.fontFamily || "Inter, sans-serif",
     };
 
     if (config.backgroundType === "unsplash" && config.backgroundImageUrl) {
@@ -201,6 +204,11 @@ function LandingPageContent() {
         <meta name="description" content={config.description} />
         <meta name="theme-color" content={config.themeColor} />
 
+        {/* Google Fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Inter:wght@400;700&family=Merriweather:wght@400;700&family=Press+Start+2P&family=Roboto+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet" />
+
         {/* Open Graph meta tags for social media */}
         <meta property="og:title" content={config.title} />
         <meta property="og:description" content={config.description} />
@@ -267,17 +275,20 @@ function LandingPageContent() {
                   <LiveActiveUsersCounter page="/" />
                 </ErrorBoundary>
               </div>
-              <Link to="/admin">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
-                  style={getButtonStyles()}
-                >
-                  <Settings className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <Link to="/admin">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
+                    style={getButtonStyles()}
+                  >
+                    <Settings className="h-4 w-4" />
+                    Admin
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             {/* Profile Section */}

@@ -8,6 +8,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProductStorePage from "./pages/ProductStorePage";
 import ProductPage from "./pages/ProductPage";
 import CheckoutSuccessPage from "./pages/CheckoutSuccessPage";
+import { ThemeProvider } from "./hooks/useTheme";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,21 +29,23 @@ export default function App() {
     <ErrorBoundary>
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
-          <Router>
-            <div className="min-h-screen bg-background">
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/store" element={<ProductStorePage />} />
-                <Route path="/product/:id" element={<ProductPage />} />
-                <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-                {/* Redirect legacy URLs from removed features */}
-                <Route path="/checkout/*" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              <Toaster />
-            </div>
-          </Router>
+          <ThemeProvider defaultTheme="system" storageKey="shelf-theme">
+            <Router>
+              <div className="min-h-screen bg-background">
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/store" element={<ProductStorePage />} />
+                  <Route path="/product/:id" element={<ProductPage />} />
+                  <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+                  {/* Redirect legacy URLs from removed features */}
+                  <Route path="/checkout/*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+                <Toaster />
+              </div>
+            </Router>
+          </ThemeProvider>
         </QueryClientProvider>
       </HelmetProvider>
     </ErrorBoundary>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Send, Clock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import EmojiPicker from "./EmojiPicker";
 import backend from "~backend/client";
 
 export default function GuestbookSection() {
@@ -82,11 +83,9 @@ export default function GuestbookSection() {
               />
             </div>
             <div>
-              <Input
-                placeholder="Pick an emoji"
+              <EmojiPicker
                 value={formData.emoji}
-                onChange={(e) => setFormData({ ...formData, emoji: e.target.value })}
-                maxLength={2}
+                onChange={(emoji) => setFormData({ ...formData, emoji })}
               />
             </div>
           </div>
