@@ -18,10 +18,10 @@ import { trackPageView, generateVisitorId } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
 import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
-import { useStripeKey } from "../utils/hooks";
+import { useStripePublishableKey } from "../utils/hooks";
 
 function LandingPageContent() {
-  const { data, isLoading, isError } = useStripeKey();
+  const { data, isLoading, isError } = useStripePublishableKey();
 
   const configQuery = useQuery({
     queryKey: ["config"],

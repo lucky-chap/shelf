@@ -12,8 +12,10 @@ export const getFrontendKeys = api<void, GetFrontendKeysResponse>(
   async () => {
     const publishableKey = stripePublishableKey();
     const unsplashAccessKeyValue = unsplashAccessKey();
-    if (!publishableKey) {
-      throw new Error("Stripe publishable key is not configured");
+    if (!publishableKey || !unsplashAccessKeyValue) {
+      throw new Error(
+        "Stripe publishable key or Unsplash access key is not configured"
+      );
     }
     return { publishableKey, unsplashAccessKey: unsplashAccessKeyValue };
   }

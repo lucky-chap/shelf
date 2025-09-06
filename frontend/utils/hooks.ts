@@ -30,7 +30,7 @@ async function fetchUnsplashAccessKey() {
 }
 
 // React Query hook for fetching + caching the key
-export function useStripeKey() {
+export function useStripePublishableKey() {
   return useQuery({
     queryKey: ["stripe", "publishableKey"],
     queryFn: fetchStripePublishableKey,
