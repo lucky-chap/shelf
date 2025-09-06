@@ -6,7 +6,7 @@ export interface TrackPageViewRequest {
   page: string;
   userAgent?: Header<"User-Agent">;
   visitorIP?: Header<"X-Forwarded-For">;
-  country?: Header<"CF-IPCountry">;
+  country?: string;
   visitorId: string;
 }
 

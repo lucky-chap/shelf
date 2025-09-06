@@ -189,13 +189,13 @@ export namespace analytics {
         public async trackPageView(params: RequestType<typeof api_analytics_track_page_view_trackPageView>): Promise<ResponseType<typeof api_analytics_track_page_view_trackPageView>> {
             // Convert our params into the objects we need for the request
             const headers = makeRecord<string, string>({
-                "cf-ipcountry":    params.country,
                 "user-agent":      params.userAgent,
                 "x-forwarded-for": params.visitorIP,
             })
 
             // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
             const body: Record<string, any> = {
+                country:   params.country,
                 page:      params.page,
                 visitorId: params.visitorId,
             }
