@@ -99,6 +99,7 @@ export interface ClientOptions {
 import { getActiveUsers as api_analytics_get_active_users_getActiveUsers } from "~backend/analytics/get_active_users";
 import { getLinkHeatmap as api_analytics_get_link_heatmap_getLinkHeatmap } from "~backend/analytics/get_link_heatmap";
 import { getStats as api_analytics_get_stats_getStats } from "~backend/analytics/get_stats";
+import { liveVisitors as api_analytics_live_visitors_liveVisitors } from "~backend/analytics/live_visitors";
 import { trackLinkClick as api_analytics_track_link_click_trackLinkClick } from "~backend/analytics/track_link_click";
 import { trackPageView as api_analytics_track_page_view_trackPageView } from "~backend/analytics/track_page_view";
 import { trackSocialReferral as api_analytics_track_social_referral_trackSocialReferral } from "~backend/analytics/track_social_referral";
@@ -114,6 +115,7 @@ export namespace analytics {
             this.getActiveUsers = this.getActiveUsers.bind(this)
             this.getLinkHeatmap = this.getLinkHeatmap.bind(this)
             this.getStats = this.getStats.bind(this)
+            this.liveVisitors = this.liveVisitors.bind(this)
             this.trackLinkClick = this.trackLinkClick.bind(this)
             this.trackPageView = this.trackPageView.bind(this)
             this.trackSocialReferral = this.trackSocialReferral.bind(this)
@@ -150,6 +152,13 @@ export namespace analytics {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/analytics`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_analytics_get_stats_getStats>
+        }
+
+        /**
+         * Tracks live visitors using WebSocket connection.
+         */
+        public async liveVisitors(): Promise<StreamInOut<StreamRequest<typeof api_analytics_live_visitors_liveVisitors>, StreamResponse<typeof api_analytics_live_visitors_liveVisitors>>> {
+            return await this.baseClient.createStreamInOut(`/analytics/live-visitors`)
         }
 
         /**

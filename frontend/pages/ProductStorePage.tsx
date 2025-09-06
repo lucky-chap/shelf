@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ShoppingBag, Download, DollarSign } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import LiveActiveUsersCounter from "../components/LiveActiveUsersCounter";
+import ActiveUsersCounter from "../components/ActiveUsersCounter";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { trackPageView } from "../utils/analytics";
 import backend from "~backend/client";
 
 function ProductStorePageContent() {
@@ -25,6 +29,11 @@ function ProductStorePageContent() {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Track page view when component mounts
+  useEffect(() => {
+    trackPageView('/store');
+  }, []);
 
   const formatPrice = (priceCents: number) => {
     if (priceCents === 0) return "Free";
@@ -103,6 +112,9 @@ function ProductStorePageContent() {
                   </p>
                 </div>
               </div>
+              <ErrorBoundary fallback={<ActiveUsersCounter />}>
+                <LiveActiveUsersCounter page="/store" />
+              </ErrorBoundary>
             </div>
 
             {/* Products Grid */}

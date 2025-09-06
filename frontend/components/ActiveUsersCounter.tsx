@@ -14,7 +14,7 @@ export default function ActiveUsersCounter() {
         return { activeUsers: 0 };
       }
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000, // Refetch every 30 seconds as fallback
     retry: 1,
     retryDelay: 5000,
   });
@@ -32,7 +32,7 @@ export default function ActiveUsersCounter() {
     >
       <Users className="h-3 w-3" />
       <span className="text-xs">
-        {activeUsers} {activeUsers === 1 ? 'person' : 'people'} here
+        {activeUsers} {activeUsers === 1 ? 'person' : 'people'} here (fallback)
       </span>
     </Badge>
   );

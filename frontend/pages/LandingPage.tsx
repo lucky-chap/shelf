@@ -10,6 +10,7 @@ import LinksList from "../components/LinksList";
 import GuestbookSection from "../components/GuestbookSection";
 import SocialShare from "../components/SocialShare";
 import ProductsSection from "../components/ProductsSection";
+import LiveActiveUsersCounter from "../components/LiveActiveUsersCounter";
 import ActiveUsersCounter from "../components/ActiveUsersCounter";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -254,7 +255,9 @@ function LandingPageContent() {
                     Store
                   </Button>
                 </Link>
-                <ActiveUsersCounter />
+                <ErrorBoundary fallback={<ActiveUsersCounter />}>
+                  <LiveActiveUsersCounter page="/" />
+                </ErrorBoundary>
               </div>
               <Link to="/admin">
                 <Button 

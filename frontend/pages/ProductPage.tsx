@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -16,8 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import LiveActiveUsersCounter from "../components/LiveActiveUsersCounter";
+import ActiveUsersCounter from "../components/ActiveUsersCounter";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { trackPageView } from "../utils/analytics";
 import { isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from "../config";
 import backend from "~backend/client";
 
@@ -48,6 +51,13 @@ function ProductPageContent() {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Track page view when component mounts
+  useEffect(() => {
+    if (id) {
+      trackPageView(`/product/${id}`);
+    }
+  }, [id]);
 
   const downloadMutation = useMutation({
     mutationFn: async ({ productId, sessionId }: { productId: number; sessionId?: string }) => {
@@ -218,13 +228,18 @@ function ProductPageContent() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="space-y-8">
             {/* Header */}
-            <div className="flex items-center space-x-4">
-              <Link to="/store">
-                <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Store
-                </Button>
-              </Link>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Link to="/store">
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Store
+                  </Button>
+                </Link>
+              </div>
+              <ErrorBoundary fallback={<ActiveUsersCounter />}>
+                <LiveActiveUsersCounter page={`/product/${id}`} />
+              </ErrorBoundary>
             </div>
 
             {/* Product Details */}
