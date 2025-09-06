@@ -18,11 +18,11 @@ import { trackPageView, generateVisitorId } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
 import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
-import { useStripeKey } from "../utils/hooks"
+import { useStripeKey } from "../utils/hooks";
 
 function LandingPageContent() {
   const { data, isLoading, isError } = useStripeKey();
-  
+
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {
@@ -41,9 +41,9 @@ function LandingPageContent() {
   const trackActivityMutation = useMutation({
     mutationFn: async () => {
       const visitorId = generateVisitorId();
-      return await backend.analytics.trackUserActivity({ 
+      return await backend.analytics.trackUserActivity({
         visitorId,
-        page: '/'
+        page: "/",
       });
     },
     onError: (error: any) => {
@@ -53,9 +53,9 @@ function LandingPageContent() {
 
   // Track page view and user activity when component mounts
   useEffect(() => {
-    trackPageView('/');
+    trackPageView("/");
     trackActivityMutation.mutate();
-    
+
     // Set up interval to track activity every 2 minutes while user is on page
     const activityInterval = setInterval(() => {
       trackActivityMutation.mutate();
@@ -80,7 +80,9 @@ function LandingPageContent() {
           <CardContent className="text-center py-12">
             <p className="text-muted-foreground mb-4">Failed to load page</p>
             <p className="text-sm text-destructive mb-4">
-              {configQuery.error instanceof Error ? configQuery.error.message : "An unexpected error occurred"}
+              {configQuery.error instanceof Error
+                ? configQuery.error.message
+                : "An unexpected error occurred"}
             </p>
             <Button onClick={() => configQuery.refetch()} variant="outline">
               Try Again
@@ -101,24 +103,24 @@ function LandingPageContent() {
     backgroundType: "solid",
     backgroundImageUrl: null,
     selectedTheme: null,
-    layoutType: null
+    layoutType: null,
   };
 
   // Apply theme preset styles if a theme is selected
-  const selectedThemePreset = config.selectedTheme 
-    ? themePresets.find(t => t.id === config.selectedTheme)
+  const selectedThemePreset = config.selectedTheme
+    ? themePresets.find((t) => t.id === config.selectedTheme)
     : null;
 
   // Get selected layout
-  const selectedLayout = config.layoutType 
-    ? layoutOptions.find(l => l.id === config.layoutType)
+  const selectedLayout = config.layoutType
+    ? layoutOptions.find((l) => l.id === config.layoutType)
     : layoutOptions[0]; // default to first layout
 
   // Determine background styles
   const getBackgroundStyles = () => {
     const baseStyles: React.CSSProperties = {
       color: config.textColor,
-      minHeight: "100vh"
+      minHeight: "100vh",
     };
 
     if (config.backgroundType === "unsplash" && config.backgroundImageUrl) {
@@ -128,12 +130,12 @@ function LandingPageContent() {
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed"
+        backgroundAttachment: "fixed",
       };
     } else {
       return {
         ...baseStyles,
-        backgroundColor: config.backgroundColor
+        backgroundColor: config.backgroundColor,
       };
     }
   };
@@ -141,9 +143,9 @@ function LandingPageContent() {
   // Apply theme-specific classes
   const getThemeClasses = () => {
     if (!selectedThemePreset) return "";
-    
+
     let classes = "";
-    
+
     // Font family
     if (selectedThemePreset.fontFamily === "serif") {
       classes += " font-serif";
@@ -152,22 +154,22 @@ function LandingPageContent() {
     } else {
       classes += " font-sans";
     }
-    
+
     return classes;
   };
 
   // Button styles based on theme
   const getButtonStyles = () => {
     if (!selectedThemePreset) return {};
-    
+
     const styles: React.CSSProperties = {};
-    
+
     if (selectedThemePreset.buttonStyle === "pill") {
       styles.borderRadius = "9999px";
     } else if (selectedThemePreset.buttonStyle === "square") {
       styles.borderRadius = "4px";
     }
-    
+
     return styles;
   };
 
@@ -188,7 +190,8 @@ function LandingPageContent() {
   };
 
   const currentUrl = window.location.href;
-  const ogImageUrl = config.avatarUrl || `${window.location.origin}/og-default.png`;
+  const ogImageUrl =
+    config.avatarUrl || `${window.location.origin}/og-default.png`;
 
   return (
     <>
@@ -197,57 +200,62 @@ function LandingPageContent() {
         <title>{config.title}</title>
         <meta name="description" content={config.description} />
         <meta name="theme-color" content={config.themeColor} />
-        
+
         {/* Open Graph meta tags for social media */}
         <meta property="og:title" content={config.title} />
         <meta property="og:description" content={config.description} />
         <meta property="og:url" content={currentUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:image" content={ogImageUrl} />
-        <meta property="og:image:alt" content={`${config.title} - Landing Page`} />
+        <meta
+          property="og:image:alt"
+          content={`${config.title} - Landing Page`}
+        />
         <meta property="og:site_name" content={config.title} />
-        
+
         {/* Twitter Card meta tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={config.title} />
         <meta name="twitter:description" content={config.description} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <meta name="twitter:image:alt" content={`${config.title} - Landing Page`} />
-        
+        <meta
+          name="twitter:image:alt"
+          content={`${config.title} - Landing Page`}
+        />
+
         {/* Additional SEO meta tags */}
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={currentUrl} />
-        
+
         {/* Structured data for better search results */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            "name": config.title,
-            "description": config.description,
-            "url": currentUrl,
-            "image": ogImageUrl,
-            "author": {
+            name: config.title,
+            description: config.description,
+            url: currentUrl,
+            image: ogImageUrl,
+            author: {
               "@type": "Person",
-              "name": config.title
-            }
+              name: config.title,
+            },
           })}
         </script>
       </Helmet>
 
-      <div 
-        className={`${getThemeClasses()}`}
-        style={getBackgroundStyles()}
-      >
+      <div className={`${getThemeClasses()}`} style={getBackgroundStyles()}>
         <div className={`${getLayoutContainerClass()} mx-auto px-4 py-8`}>
-          <div className={`space-y-8 layout-${selectedLayout?.id || 'default'}`}>
+          <div
+            className={`space-y-8 layout-${selectedLayout?.id || "default"}`}
+          >
             {/* Header with Admin Access and Active Users */}
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-3">
                 <Link to="/store">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
                     style={getButtonStyles()}
                   >
@@ -260,9 +268,9 @@ function LandingPageContent() {
                 </ErrorBoundary>
               </div>
               <Link to="/admin">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="flex items-center gap-2 backdrop-blur-sm bg-white/10 border-white/20 text-current hover:bg-white/20"
                   style={getButtonStyles()}
                 >
@@ -273,30 +281,46 @@ function LandingPageContent() {
             </div>
 
             {/* Profile Section */}
-            <Card className={config.backgroundType === "unsplash" ? "backdrop-blur-sm bg-white/90" : ""}>
+            <Card
+              className={
+                config.backgroundType === "unsplash"
+                  ? "backdrop-blur-sm bg-white/90"
+                  : ""
+              }
+            >
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <Avatar className="h-24 w-24 ring-2 ring-offset-2" style={{ ringColor: config.themeColor }}>
+                  <Avatar
+                    className={`h-24 w-24 ring-2 ring-offset-2 ring-[${config.themeColor}]`}
+                    // style={{ ringColor: config.themeColor }}
+                  >
                     <AvatarImage src={config.avatarUrl || undefined} />
                     <AvatarFallback className="text-lg">
                       {config.title.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  
+
                   <div>
-                    <h1 className="text-2xl font-bold" style={{ color: config.themeColor }}>
+                    <h1
+                      className="text-2xl font-bold"
+                      style={{ color: config.themeColor }}
+                    >
                       {config.title}
                     </h1>
-                    <p className="text-muted-foreground mt-2">{config.description}</p>
+                    <p className="text-muted-foreground mt-2">
+                      {config.description}
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <ErrorBoundary>
-              <div 
-                style={{ "--button-style": JSON.stringify(getButtonStyles()) } as any}
-                className={`layout-${selectedLayout?.id || 'default'}`}
+              <div
+                style={
+                  { "--button-style": JSON.stringify(getButtonStyles()) } as any
+                }
+                className={`layout-${selectedLayout?.id || "default"}`}
               >
                 <LinksList />
               </div>
@@ -311,7 +335,7 @@ function LandingPageContent() {
             </ErrorBoundary>
 
             <ErrorBoundary>
-              <SocialShare 
+              <SocialShare
                 title={config.title}
                 description={config.description}
                 url={currentUrl}
@@ -319,19 +343,20 @@ function LandingPageContent() {
             </ErrorBoundary>
 
             {/* Background attribution for Unsplash */}
-            {config.backgroundType === "unsplash" && config.backgroundImageUrl && (
-              <div className="text-center">
-                <p className="text-xs text-white/60 backdrop-blur-sm bg-black/20 rounded px-2 py-1 inline-block">
-                  Background image from Unsplash
-                </p>
-              </div>
-            )}
+            {config.backgroundType === "unsplash" &&
+              config.backgroundImageUrl && (
+                <div className="text-center">
+                  <p className="text-xs text-white/60 backdrop-blur-sm bg-black/20 rounded px-2 py-1 inline-block">
+                    Background image from Unsplash
+                  </p>
+                </div>
+              )}
           </div>
         </div>
       </div>
 
       {/* Layout-specific CSS */}
-      <style jsx>{`
+      <style>{`
         .layout-grid .links-container {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
