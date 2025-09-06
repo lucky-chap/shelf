@@ -133,7 +133,18 @@ const ProductForm = React.memo<ProductFormProps>(({
 
     <div className="space-y-2">
       <Label>Product File *</Label>
-      {!editingProduct && (
+      {editingProduct ? (
+        <div className="p-3 bg-muted rounded-lg">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{formData.fileName}</span>
+            <Badge variant="secondary">{formatFileSize(formData.fileSize)}</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Product files cannot be changed after creation. To use a different file, create a new product.
+          </p>
+        </div>
+      ) : (
         <>
           <Input
             type="file"
@@ -147,16 +158,16 @@ const ProductForm = React.memo<ProductFormProps>(({
               Uploading file...
             </div>
           )}
+          {formData.fileUrl && (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{formData.fileName}</span>
+                <Badge variant="secondary">{formatFileSize(formData.fileSize)}</Badge>
+              </div>
+            </div>
+          )}
         </>
-      )}
-      {formData.fileUrl && (
-        <div className="p-3 bg-muted rounded-lg">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{formData.fileName}</span>
-            <Badge variant="secondary">{formatFileSize(formData.fileSize)}</Badge>
-          </div>
-        </div>
       )}
     </div>
 
