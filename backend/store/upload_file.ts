@@ -14,23 +14,31 @@ export interface UploadFileResponse {
 
 // Uploads a file to product storage and returns the URL.
 export const uploadFile = api<UploadFileRequest, UploadFileResponse>(
-  { expose: true, method: "POST", path: "/store/upload/file" },
+  {
+    expose: true,
+    method: "POST",
+    path: "/store/upload/file",
+  },
   async (req) => {
     if (!req.fileName || !req.fileContent) {
       throw APIError.invalidArgument("fileName and fileContent are required");
     }
 
+    if (req.fileContent.length > 10 * 1024 * 1024) {
+      throw APIError.invalidArgument("File size exceeds 10MB limit");
+    }
+
     try {
       // Decode base64 content
-      const fileBuffer = Buffer.from(req.fileContent, 'base64');
-      
+      const fileBuffer = Buffer.from(req.fileContent, "base64");
+
       // Generate unique filename to avoid conflicts
       const timestamp = Date.now();
       const uniqueFileName = `${timestamp}_${req.fileName}`;
 
       // Upload to storage
       const attrs = await productFiles.upload(uniqueFileName, fileBuffer, {
-        contentType: getContentType(req.fileName)
+        contentType: getContentType(req.fileName),
       });
 
       // Generate the file URL (this would be internal URL for private bucket)
@@ -39,7 +47,7 @@ export const uploadFile = api<UploadFileRequest, UploadFileResponse>(
       return {
         fileUrl,
         fileName: req.fileName,
-        fileSize: attrs.size
+        fileSize: attrs.size,
       };
     } catch (error: any) {
       console.error("File upload failed:", error);
@@ -49,8 +57,8 @@ export const uploadFile = api<UploadFileRequest, UploadFileResponse>(
 );
 
 function getContentType(fileName: string): string {
-  const ext = fileName.toLowerCase().split('.').pop();
-  
+  const ext = fileName.toLowerCase().split(".").pop();
+
   const mimeTypes: Record<string, string> = {
     pdf: "application/pdf",
     zip: "application/zip",
@@ -64,7 +72,7 @@ function getContentType(fileName: string): string {
     doc: "application/msword",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     xls: "application/vnd.ms-excel",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   };
 
   return mimeTypes[ext || ""] || "application/octet-stream";
