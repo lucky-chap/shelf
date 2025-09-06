@@ -138,7 +138,7 @@ function AnalyticsContent() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="traffic">Traffic</TabsTrigger>
           <TabsTrigger value="audience">Audience</TabsTrigger>
-          <TabsTrigger value="heatmap">Link Heatmap</TabsTrigger>
+          {/* <TabsTrigger value="heatmap">Link Heatmap</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -319,9 +319,9 @@ function AnalyticsContent() {
           </div>
         </TabsContent>
 
-        <TabsContent value="heatmap" className="space-y-6">
+        {/* <TabsContent value="heatmap" className="space-y-6">
           <LinkHeatmap />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );

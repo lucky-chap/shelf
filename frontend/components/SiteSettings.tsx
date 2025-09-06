@@ -488,10 +488,10 @@ function SiteSettingsContent() {
                       <Label htmlFor="unsplash">Unsplash Image</Label>
                     </div>
                   )}
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <RadioGroupItem value="upload" id="upload" />
                     <Label htmlFor="upload">Custom Upload (Coming Soon)</Label>
-                  </div>
+                  </div> */}
                 </RadioGroup>
               </div>
 
