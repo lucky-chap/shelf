@@ -1,18 +1,14 @@
 // Generate a unique visitor ID for analytics tracking
 export function generateVisitorId(): string {
   // Check if we already have a visitor ID stored
-  let visitorId = localStorage.getItem("visitor_id");
-
+  let visitorId = localStorage.getItem('visitor_id');
+  
   if (!visitorId) {
     // Generate a new UUID-like ID
-    visitorId =
-      "visitor_" +
-      Math.random().toString(36).substr(2, 9) +
-      "_" +
-      Date.now().toString(36);
-    localStorage.setItem("visitor_id", visitorId);
+    visitorId = 'visitor_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now().toString(36);
+    localStorage.setItem('visitor_id', visitorId);
   }
-
+  
   return visitorId;
 }
 
@@ -20,38 +16,32 @@ export function generateVisitorId(): string {
 export async function trackPageView(page: string) {
   try {
     const visitorId = generateVisitorId();
-
+    
     // Import backend client dynamically to avoid circular dependencies
-    const { default: backend } = await import("~backend/client");
-
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
-
+    const { default: backend } = await import('~backend/client');
+    
     await backend.analytics.trackPageView({
       page,
-      visitorId,
-      country: data.country,
-      visitorIP: data.ip,
-      userAgent: data.user_agent,
+      visitorId
     });
   } catch (error) {
-    console.error("Failed to track page view:", error);
+    console.error('Failed to track page view:', error);
   }
 }
 
 // Track user activity for active users counter
-export async function trackUserActivity(page: string = "/") {
+export async function trackUserActivity(page: string = '/') {
   try {
     const visitorId = generateVisitorId();
-
+    
     // Import backend client dynamically to avoid circular dependencies
-    const { default: backend } = await import("~backend/client");
-
+    const { default: backend } = await import('~backend/client');
+    
     await backend.analytics.trackUserActivity({
       visitorId,
-      page,
+      page
     });
   } catch (error) {
-    console.error("Failed to track user activity:", error);
+    console.error('Failed to track user activity:', error);
   }
 }
