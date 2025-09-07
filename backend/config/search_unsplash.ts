@@ -1,35 +1,6 @@
 import { api, APIError } from "encore.dev/api";
 import { Query } from "encore.dev/api";
-import { unsplashAccessKey } from "../store/config"
-
-/**
- * Reads a non-empty environment variable.
- */
-function readEnv(name: string): string | null {
-  const v = process.env[name];
-  if (v && typeof v === "string" && v.trim().length > 0) {
-    return v;
-  }
-  return null;
-}
-
-/**
- * Optional Encore secret fallback.
- * If Encore secrets are configured, we support reading UNSPLASH_ACCESS_KEY from there too.
- * This keeps local dev simple with .env while allowing production to use Secrets.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function readEncoreSecret(name: "UNSPLASH_ACCESS_KEY"): string | null {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { secret } = require("encore.dev/config") as typeof import("encore.dev/config");
-    const s = secret(name);
-    const val = s();
-    return val && val.trim().length > 0 ? val : null;
-  } catch {
-    return null;
-  }
-}
+import { unsplashAccessKey } from "../store/config";
 
 export interface SearchUnsplashParams {
   query: Query<string>;
@@ -61,10 +32,11 @@ export interface SearchUnsplashResponse {
 export const searchUnsplash = api<SearchUnsplashParams, SearchUnsplashResponse>(
   { expose: true, method: "GET", path: "/config/unsplash/search" },
   async ({ query, page = 1 }) => {
-    // const accessKey = readEnv("UNSPLASH_ACCESS_KEY") || readEncoreSecret("UNSPLASH_ACCESS_KEY");
     const accessKey = unsplashAccessKey();
     if (!accessKey) {
-      throw APIError.failedPrecondition("Unsplash access key not configured (UNSPLASH_ACCESS_KEY)");
+      throw APIError.failedPrecondition(
+        "Unsplash access key not configured for server (UNSPLASH_ACCESS_KEY)"
+      );
     }
 
     if (!query || query.trim().length === 0) {
@@ -94,7 +66,11 @@ export const searchUnsplash = api<SearchUnsplashParams, SearchUnsplashResponse>(
         throw APIError.internal(`Unsplash API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        results: any[];
+        total: number;
+        total_pages: number;
+      };
 
       return {
         results: data.results.map((photo: any) => ({

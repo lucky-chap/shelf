@@ -14,11 +14,17 @@ export const UNSPLASH_ACCESS_KEY = envUnsplashKey;
 
 // Check if Unsplash is configured
 export const isUnsplashConfigured = () => {
-  return typeof UNSPLASH_ACCESS_KEY === "string" && UNSPLASH_ACCESS_KEY.trim().length > 0;
+  return (
+    typeof UNSPLASH_ACCESS_KEY === "string" &&
+    UNSPLASH_ACCESS_KEY.trim().length > 0
+  );
 };
 
 // Check if Stripe is configured
 export const isStripeConfigured = () => {
-	// console.log("publishable key state: ", envStripePublishableKey)
-  return typeof envStripePublishableKey === "string" && envStripePublishableKey.trim().length > 0;
+  // console.log("publishable key state: ", envStripePublishableKey)
+  return (
+    typeof envStripePublishableKey === "string" &&
+    envStripePublishableKey.trim().length > 0
+  );
 };

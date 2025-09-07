@@ -18,7 +18,7 @@ import { trackPageView, generateVisitorId } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
 import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
-import { useStripePublishableKey } from "../utils/hooks";
+import { useStripePublishableKey } from "@/hooks/useStripe";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 function LandingPageContent() {
@@ -206,8 +206,15 @@ function LandingPageContent() {
 
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Inter:wght@400;700&family=Merriweather:wght@400;700&family=Press+Start+2P&family=Roboto+Mono:wght@400;700&family=VT323&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Inter:wght@400;700&family=Merriweather:wght@400;700&family=Press+Start+2P&family=Roboto+Mono:wght@400;700&family=VT323&display=swap"
+          rel="stylesheet"
+        />
 
         {/* Open Graph meta tags for social media */}
         <meta property="og:title" content={config.title} />
@@ -293,11 +300,11 @@ function LandingPageContent() {
 
             {/* Profile Section */}
             <Card
-              className={
-                config.backgroundType === "unsplash"
-                  ? "backdrop-blur-sm bg-white/90"
-                  : ""
-              }
+            // className={
+            //   config.backgroundType === "unsplash"
+            //     ? "backdrop-blur-sm bg-white/90"
+            //     : ""
+            // }
             >
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
