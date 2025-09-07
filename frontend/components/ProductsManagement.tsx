@@ -155,19 +155,19 @@ const ProductForm = React.memo<ProductFormProps>(
           <p className="text-xs text-muted-foreground">
             Set to $0.00 for free products. Paid products must be at least
             $1.00.
-            {/* {!isStripeConfigured() && (
-            <span className="text-destructive">
-              {" "}
-              (Stripe not configured - only free products will work)
-            </span>
-          )} */}
-            {stripePublishableKey == undefined ||
+            {!isStripeConfigured() && (
+              <span className="text-destructive">
+                {" "}
+                (Stripe not configured - only free products will work)
+              </span>
+            )}
+            {/* {stripePublishableKey == undefined ||
               (typeof stripePublishableKey !== "string" && (
                 <span className="text-destructive">
                   {" "}
                   (Stripe not configured - only free products will work)
                 </span>
-              ))}
+              ))} */}
           </p>
         </div>
 

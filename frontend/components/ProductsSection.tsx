@@ -37,7 +37,11 @@ export default function ProductsSection() {
       return await backend.store.downloadProduct({ productId });
     },
     onSuccess: (data) => {
-      setDownloadData(data);
+      setDownloadData({
+        url: data.downloadUrl,
+        fileName: data.fileName,
+        expiresIn: data.expiresIn,
+      });
       setDownloadDialogOpen(true);
     },
     onError: (error: any) => {
@@ -54,11 +58,11 @@ export default function ProductsSection() {
     mutationFn: async (productId: number) => {
       const successUrl = `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&product_id=${productId}`;
       const cancelUrl = window.location.href;
-      
+
       return await backend.store.createCheckoutSession({
         productId,
         successUrl,
-        cancelUrl
+        cancelUrl,
       });
     },
     onSuccess: (data) => {
@@ -108,7 +112,7 @@ export default function ProductsSection() {
 
   const handleDownloadClick = () => {
     if (downloadData) {
-      window.open(downloadData.url, '_blank');
+      window.open(downloadData.url, "_blank");
       toast({
         title: "Download Started",
         description: "Your download should begin shortly.",
@@ -150,7 +154,10 @@ export default function ProductsSection() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {products.map((product) => (
-              <Card key={product.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={product.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {product.coverImageUrl && (
@@ -162,21 +169,27 @@ export default function ProductsSection() {
                         />
                       </div>
                     )}
-                    
+
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
-                        <h3 className="font-semibold text-lg line-clamp-1">{product.title}</h3>
-                        <Badge variant={product.priceCents === 0 ? "secondary" : "default"}>
+                        <h3 className="font-semibold text-lg line-clamp-1">
+                          {product.title}
+                        </h3>
+                        <Badge
+                          variant={
+                            product.priceCents === 0 ? "secondary" : "default"
+                          }
+                        >
                           {formatPrice(product.priceCents)}
                         </Badge>
                       </div>
-                      
+
                       {product.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {product.description}
                         </p>
                       )}
-                      
+
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{formatFileSize(product.fileSize)}</span>
                         <div className="flex items-center gap-1">
@@ -185,14 +198,17 @@ export default function ProductsSection() {
                         </div>
                       </div>
                     </div>
-                    
-                    <Button 
-                      className="w-full" 
+
+                    <Button
+                      className="w-full"
                       variant={product.priceCents === 0 ? "outline" : "default"}
                       onClick={() => handleProductAction(product)}
-                      disabled={downloadMutation.isPending || checkoutMutation.isPending}
+                      disabled={
+                        downloadMutation.isPending || checkoutMutation.isPending
+                      }
                     >
-                      {(downloadMutation.isPending || checkoutMutation.isPending) ? (
+                      {downloadMutation.isPending ||
+                      checkoutMutation.isPending ? (
                         <LoadingSpinner size="sm" />
                       ) : product.priceCents === 0 ? (
                         <>
@@ -211,7 +227,7 @@ export default function ProductsSection() {
               </Card>
             ))}
           </div>
-          
+
           <div className="mt-4 text-center">
             <Button variant="outline" asChild>
               <a href="/store">View All Products</a>
@@ -226,7 +242,8 @@ export default function ProductsSection() {
           <DialogHeader>
             <DialogTitle>Download Ready</DialogTitle>
             <DialogDescription>
-              Your download link is ready. Click the button below to start downloading.
+              Your download link is ready. Click the button below to start
+              downloading.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -235,7 +252,8 @@ export default function ProductsSection() {
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="font-medium">{downloadData.fileName}</p>
                   <p className="text-sm text-muted-foreground">
-                    Link expires in {Math.floor(downloadData.expiresIn / 60)} minutes
+                    Link expires in {Math.floor(downloadData.expiresIn / 60)}{" "}
+                    minutes
                   </p>
                 </div>
                 <Button onClick={handleDownloadClick} className="w-full">
