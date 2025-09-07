@@ -94,7 +94,8 @@ bun install
 
 - After extracting the Stripe CLI, add it to your PATH
 - Open up a terminal and type `stripe login` to login
-- After logging in, type `stripe listen` in your terminal to listen for Stripe Events in the app
+- After logging in, type `stripe listen` to listen for Stripe
+  Events in the app
 - Copy your `webhook secret` that appears and populate
   as shown below
 

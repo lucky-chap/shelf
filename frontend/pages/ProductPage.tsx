@@ -2,24 +2,12 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  ArrowLeft,
-  Download,
-  DollarSign,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowLeft, Download, DollarSign, FileText, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -33,16 +21,10 @@ import ActiveUsersCounter from "../components/ActiveUsersCounter";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
-import { isStripeConfigured } from "../config";
+import { isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from "../config";
 import backend from "~backend/client";
-import { useStripePublishableKey } from "@/hooks/useStripe";
 
 function ProductPageContent() {
-  const {
-    data: stripePublishableKey,
-    isLoading,
-    error,
-  } = useStripePublishableKey();
   const { id } = useParams<{ id: string }>();
   const [email, setEmail] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -78,21 +60,11 @@ function ProductPageContent() {
   }, [id]);
 
   const downloadMutation = useMutation({
-    mutationFn: async ({
-      productId,
-      sessionId,
-    }: {
-      productId: number;
-      sessionId?: string;
-    }) => {
+    mutationFn: async ({ productId, sessionId }: { productId: number; sessionId?: string }) => {
       return await backend.store.downloadProduct({ productId, sessionId });
     },
     onSuccess: (data) => {
-      setDownloadData({
-        url: data.downloadUrl,
-        fileName: data.fileName,
-        expiresIn: data.expiresIn,
-      });
+      setDownloadData(data);
       setDownloadDialogOpen(true);
     },
     onError: (error: any) => {
@@ -106,21 +78,15 @@ function ProductPageContent() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: async ({
-      productId,
-      customerEmail,
-    }: {
-      productId: number;
-      customerEmail?: string;
-    }) => {
+    mutationFn: async ({ productId, customerEmail }: { productId: number; customerEmail?: string }) => {
       const successUrl = `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&product_id=${productId}`;
       const cancelUrl = window.location.href;
-
+      
       return await backend.store.createCheckoutSession({
         productId,
         customerEmail,
         successUrl,
-        cancelUrl,
+        cancelUrl
       });
     },
     onSuccess: (data) => {
@@ -159,20 +125,7 @@ function ProductPageContent() {
       downloadMutation.mutate({ productId: product.id });
     } else {
       // Paid product - start checkout
-      // if (!isStripeConfigured()) {
-      //   toast({
-      //     title: "Payment Not Available",
-      //     description: "Stripe is not configured for payments.",
-      //     variant: "destructive",
-      //   });
-      //   return;
-      // }
-
-      // use publishable key from backend instead
-      if (
-        stripePublishableKey == undefined ||
-        typeof stripePublishableKey !== "string"
-      ) {
+      if (!isStripeConfigured()) {
         toast({
           title: "Payment Not Available",
           description: "Stripe is not configured for payments.",
@@ -182,16 +135,16 @@ function ProductPageContent() {
       }
 
       setIsCheckingOut(true);
-      checkoutMutation.mutate({
-        productId: product.id,
-        customerEmail: email || undefined,
+      checkoutMutation.mutate({ 
+        productId: product.id, 
+        customerEmail: email || undefined 
       });
     }
   };
 
   const handleDownloadClick = () => {
     if (downloadData) {
-      window.open(downloadData.url, "_blank");
+      window.open(downloadData.url, '_blank');
       toast({
         title: "Download Started",
         description: "Your download should begin shortly.",
@@ -214,7 +167,7 @@ function ProductPageContent() {
     );
   }
 
-  if (productQuery.isLoading || isLoading) {
+  if (productQuery.isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -233,13 +186,9 @@ function ProductPageContent() {
           <Card className="border-destructive">
             <CardContent className="text-center py-12">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
-                Failed to load product
-              </p>
+              <p className="text-muted-foreground mb-4">Failed to load product</p>
               <p className="text-sm text-destructive mb-4">
-                {productQuery.error instanceof Error
-                  ? productQuery.error.message
-                  : "An unexpected error occurred"}
+                {productQuery.error instanceof Error ? productQuery.error.message : "An unexpected error occurred"}
               </p>
               <Button onClick={() => productQuery.refetch()} variant="outline">
                 Try Again
@@ -272,10 +221,7 @@ function ProductPageContent() {
     <>
       <Helmet>
         <title>{product.title} - Digital Store</title>
-        <meta
-          name="description"
-          content={product.description || `Download ${product.title}`}
-        />
+        <meta name="description" content={product.description || `Download ${product.title}`} />
       </Helmet>
 
       <div className="min-h-screen bg-background">
@@ -285,11 +231,7 @@ function ProductPageContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <Link to="/store">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
                     <ArrowLeft className="h-4 w-4" />
                     Back to Store
                   </Button>
@@ -323,22 +265,13 @@ function ProductPageContent() {
               <div className="space-y-6">
                 <div>
                   <div className="flex items-start justify-between mb-2">
-                    <h1 className="text-3xl font-bold text-foreground">
-                      {product.title}
-                    </h1>
-                    <Badge
-                      variant={
-                        product.priceCents === 0 ? "secondary" : "default"
-                      }
-                      className="text-lg px-3 py-1"
-                    >
+                    <h1 className="text-3xl font-bold text-foreground">{product.title}</h1>
+                    <Badge variant={product.priceCents === 0 ? "secondary" : "default"} className="text-lg px-3 py-1">
                       {formatPrice(product.priceCents)}
                     </Badge>
                   </div>
                   {product.description && (
-                    <p className="text-muted-foreground text-lg">
-                      {product.description}
-                    </p>
+                    <p className="text-muted-foreground text-lg">{product.description}</p>
                   )}
                 </div>
 
@@ -354,15 +287,11 @@ function ProductPageContent() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">File Size:</span>
-                      <span className="font-medium">
-                        {formatFileSize(product.fileSize)}
-                      </span>
+                      <span className="font-medium">{formatFileSize(product.fileSize)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Downloads:</span>
-                      <span className="font-medium">
-                        {product.downloadCount}
-                      </span>
+                      <span className="font-medium">{product.downloadCount}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -374,9 +303,10 @@ function ProductPageContent() {
                       {product.priceCents === 0 ? "Download" : "Purchase"}
                     </CardTitle>
                     <CardDescription>
-                      {product.priceCents === 0
+                      {product.priceCents === 0 
                         ? "This product is free to download"
-                        : "Complete your purchase to get instant access"}
+                        : "Complete your purchase to get instant access"
+                      }
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -397,25 +327,14 @@ function ProductPageContent() {
                       </div>
                     )}
 
-                    <Button
-                      className="w-full"
+                    <Button 
+                      className="w-full" 
                       size="lg"
                       onClick={handlePurchase}
-                      disabled={
-                        isCheckingOut || downloadMutation.isPending || isLoading
-                      }
+                      disabled={isCheckingOut || downloadMutation.isPending}
                     >
-                      {isCheckingOut ||
-                      downloadMutation.isPending ||
-                      isLoading ? (
-                        <LoadingSpinner
-                          size="sm"
-                          text={
-                            product.priceCents === 0
-                              ? "Preparing download..."
-                              : "Processing..."
-                          }
-                        />
+                      {isCheckingOut || downloadMutation.isPending ? (
+                        <LoadingSpinner size="sm" text={product.priceCents === 0 ? "Preparing download..." : "Processing..."} />
                       ) : product.priceCents === 0 ? (
                         <>
                           <Download className="h-4 w-4 mr-2" />
@@ -451,8 +370,7 @@ function ProductPageContent() {
           <DialogHeader>
             <DialogTitle>Download Ready</DialogTitle>
             <DialogDescription>
-              Your download link is ready. Click the button below to start
-              downloading.
+              Your download link is ready. Click the button below to start downloading.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -461,8 +379,7 @@ function ProductPageContent() {
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="font-medium">{downloadData.fileName}</p>
                   <p className="text-sm text-muted-foreground">
-                    Link expires in {Math.floor(downloadData.expiresIn / 60)}{" "}
-                    minutes
+                    Link expires in {Math.floor(downloadData.expiresIn / 60)} minutes
                   </p>
                 </div>
                 <Button onClick={handleDownloadClick} className="w-full">
