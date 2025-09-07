@@ -1,10 +1,10 @@
 CREATE TABLE guest_entries (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  nickname VARCHAR(100),
+  nickname VARCHAR(200),
   message TEXT NOT NULL,
-  emoji VARCHAR(10),
-  visitor_ip VARCHAR(45),
+  emoji VARCHAR(60),
+  visitor_ip TEXT,
   is_approved BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -4,10 +4,10 @@
 CREATE TABLE page_views (
   id BIGSERIAL PRIMARY KEY,
   page VARCHAR(200) NOT NULL,
-  visitor_id VARCHAR(100) NOT NULL, -- Client-generated UUID for tracking
-  visitor_ip VARCHAR(45),
+  visitor_id VARCHAR(500) NOT NULL, -- Client-generated UUID for tracking
+  visitor_ip TEXT,
   user_agent TEXT,
-  device_type VARCHAR(50), -- Mobile, Desktop, Tablet
+  device_type VARCHAR(100), -- Mobile, Desktop, Tablet
   country VARCHAR(100), -- From IP geolocation
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -16,10 +16,10 @@ CREATE TABLE page_views (
 CREATE TABLE link_clicks (
   id BIGSERIAL PRIMARY KEY,
   link_id BIGINT NOT NULL REFERENCES links(id) ON DELETE CASCADE,
-  visitor_id VARCHAR(100) NOT NULL,
-  visitor_ip VARCHAR(45),
+  visitor_id VARCHAR(500) NOT NULL,
+  visitor_ip TEXT,
   user_agent TEXT,
-  device_type VARCHAR(50),
+  device_type VARCHAR(100),
   country VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,17 +14,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Settings, Save, Palette, Image, Upload, Layout, Type } from "lucide-react";
+import {
+  Settings,
+  Save,
+  Palette,
+  Image,
+  Upload,
+  Layout,
+  Type,
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import ThemePresetSelector, { ThemePreset, themePresets } from "./ThemePresetSelector";
+import ThemePresetSelector, {
+  ThemePreset,
+  themePresets,
+} from "./ThemePresetSelector";
 import UnsplashImageSearch from "./UnsplashImageSearch";
 import LayoutSelector from "./LayoutSelector";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
 import backend from "~backend/client";
-import { isUnsplashConfigured as isUnsplashConfiguredFrontend } from "../config";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useUnsplashAccessKey } from "@/hooks/useUnsplash";
 
 const availableFonts = [
   { name: "Sans Serif (Default)", value: "Inter, sans-serif" },
@@ -30,6 +53,7 @@ const availableFonts = [
 ];
 
 function SiteSettingsContent() {
+  const { data: unsplashEnabled } = useUnsplashAccessKey();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -41,7 +65,7 @@ function SiteSettingsContent() {
     backgroundImageUrl: "",
     selectedTheme: "" as string,
     layoutType: "" as string,
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Inter, sans-serif",
   });
   const [avatarUpload, setAvatarUpload] = useState<{
     file: File | null;
@@ -50,7 +74,6 @@ function SiteSettingsContent() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const unsplashEnabled = isUnsplashConfiguredFrontend();
 
   const configQuery = useQuery({
     queryKey: ["config"],
@@ -72,12 +95,12 @@ function SiteSettingsContent() {
       return new Promise<any>((resolve, reject) => {
         reader.onload = async () => {
           try {
-            const base64Content = reader.result?.toString().split(',')[1];
+            const base64Content = reader.result?.toString().split(",")[1];
             if (!base64Content) throw new Error("Failed to read file");
-            
+
             const result = await backend.config.uploadAvatar({
               fileName: file.name,
-              imageContent: base64Content
+              imageContent: base64Content,
             });
             resolve(result);
           } catch (error) {
@@ -89,9 +112,9 @@ function SiteSettingsContent() {
       });
     },
     onSuccess: (data) => {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        avatarUrl: data.avatarUrl
+        avatarUrl: data.avatarUrl,
       }));
       setAvatarUpload({ file: null, uploading: false });
       toast({
@@ -101,7 +124,7 @@ function SiteSettingsContent() {
     },
     onError: (error: any) => {
       console.error("Avatar upload failed:", error);
-      setAvatarUpload(prev => ({ ...prev, uploading: false }));
+      setAvatarUpload((prev) => ({ ...prev, uploading: false }));
       toast({
         title: "Upload Failed",
         description: error.message || "Please try again.",
@@ -160,7 +183,7 @@ function SiteSettingsContent() {
   });
 
   const handleInputChange = useCallback((field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   useEffect(() => {
@@ -169,7 +192,10 @@ function SiteSettingsContent() {
       const nextBackgroundType =
         !unsplashEnabled && configQuery.data.backgroundType === "unsplash"
           ? "solid"
-          : (configQuery.data.backgroundType as "solid" | "unsplash" | "upload") || "solid";
+          : (configQuery.data.backgroundType as
+              | "solid"
+              | "unsplash"
+              | "upload") || "solid";
 
       setFormData({
         title: configQuery.data.title,
@@ -182,7 +208,7 @@ function SiteSettingsContent() {
         backgroundImageUrl: configQuery.data.backgroundImageUrl || "",
         selectedTheme: configQuery.data.selectedTheme || "",
         layoutType: configQuery.data.layoutType || "",
-        fontFamily: configQuery.data.fontFamily || "Inter, sans-serif"
+        fontFamily: configQuery.data.fontFamily || "Inter, sans-serif",
       });
     }
   }, [configQuery.data, unsplashEnabled]);
@@ -216,7 +242,7 @@ function SiteSettingsContent() {
   };
 
   const handleThemeSelect = (preset: ThemePreset) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       themeColor: preset.themeColor,
       backgroundColor: preset.backgroundColor,
@@ -227,33 +253,36 @@ function SiteSettingsContent() {
   };
 
   const handleLayoutSelect = (layoutType: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      layoutType
+      layoutType,
     }));
   };
 
-  const handleBackgroundTypeChange = (type: "solid" | "unsplash" | "upload") => {
+  const handleBackgroundTypeChange = (
+    type: "solid" | "unsplash" | "upload"
+  ) => {
     // Prevent selecting unsplash if not configured
     if (type === "unsplash" && !unsplashEnabled) {
       toast({
         title: "Unsplash Not Configured",
-        description: "Add VITE_UNSPLASH_ACCESS_KEY (frontend) and UNSPLASH_ACCESS_KEY (backend) to enable Unsplash.",
+        description:
+          "Add VITE_UNSPLASH_ACCESS_KEY (frontend) and UNSPLASH_ACCESS_KEY (backend) to enable Unsplash.",
         variant: "destructive",
       });
       return;
     }
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       backgroundType: type,
-      backgroundImageUrl: type === "solid" ? "" : prev.backgroundImageUrl
+      backgroundImageUrl: type === "solid" ? "" : prev.backgroundImageUrl,
     }));
   };
 
   const handleUnsplashImageSelect = (imageUrl: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      backgroundImageUrl: imageUrl
+      backgroundImageUrl: imageUrl,
     }));
   };
 
@@ -271,7 +300,9 @@ function SiteSettingsContent() {
         <Card>
           <CardHeader>
             <CardTitle>Theme Presets</CardTitle>
-            <CardDescription>Choose from pre-designed themes or customize your own colors below</CardDescription>
+            <CardDescription>
+              Choose from pre-designed themes or customize your own colors below
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <LoadingSkeleton rows={2} className="w-full" />
@@ -280,7 +311,9 @@ function SiteSettingsContent() {
         <Card>
           <CardHeader>
             <CardTitle>Site Settings</CardTitle>
-            <CardDescription>Configure your landing page appearance and content</CardDescription>
+            <CardDescription>
+              Configure your landing page appearance and content
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -302,9 +335,13 @@ function SiteSettingsContent() {
       <Card className="border-destructive">
         <CardContent className="text-center py-12">
           <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">Failed to load site settings</p>
+          <p className="text-muted-foreground mb-4">
+            Failed to load site settings
+          </p>
           <p className="text-sm text-destructive">
-            {configQuery.error instanceof Error ? configQuery.error.message : "An unexpected error occurred"}
+            {configQuery.error instanceof Error
+              ? configQuery.error.message
+              : "An unexpected error occurred"}
           </p>
         </CardContent>
       </Card>
@@ -360,7 +397,9 @@ function SiteSettingsContent() {
                     id="description"
                     placeholder="Welcome to my creator landing page"
                     value={formData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("description", e.target.value)
+                    }
                     rows={3}
                   />
                 </div>
@@ -379,7 +418,7 @@ function SiteSettingsContent() {
                         Current avatar
                       </p>
                     </div>
-                    
+
                     <div className="flex-1 space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="avatarUrl">Avatar Image URL</Label>
@@ -387,21 +426,28 @@ function SiteSettingsContent() {
                           id="avatarUrl"
                           placeholder="https://example.com/avatar.jpg"
                           value={formData.avatarUrl}
-                          onChange={(e) => handleInputChange("avatarUrl", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange("avatarUrl", e.target.value)
+                          }
                         />
                         <p className="text-xs text-muted-foreground">
-                          Enter a direct URL to your avatar image (JPG, PNG, etc.)
+                          Enter a direct URL to your avatar image (JPG, PNG,
+                          etc.)
                         </p>
                       </div>
 
                       <div className="flex items-center gap-4">
                         <div className="h-px bg-border flex-1" />
-                        <span className="text-xs text-muted-foreground">OR</span>
+                        <span className="text-xs text-muted-foreground">
+                          OR
+                        </span>
                         <div className="h-px bg-border flex-1" />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="avatarUpload">Upload Avatar Image</Label>
+                        <Label htmlFor="avatarUpload">
+                          Upload Avatar Image
+                        </Label>
                         <Input
                           id="avatarUpload"
                           type="file"
@@ -423,8 +469,8 @@ function SiteSettingsContent() {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full flex items-center gap-2"
                   disabled={updateConfigMutation.isPending}
                 >
@@ -468,7 +514,11 @@ function SiteSettingsContent() {
                 <Label>Background Source</Label>
                 <RadioGroup
                   value={formData.backgroundType}
-                  onValueChange={(value) => handleBackgroundTypeChange(value as "solid" | "unsplash" | "upload")}
+                  onValueChange={(value) =>
+                    handleBackgroundTypeChange(
+                      value as "solid" | "unsplash" | "upload"
+                    )
+                  }
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="solid" id="solid" />
@@ -494,9 +544,12 @@ function SiteSettingsContent() {
                 <Card className="border-dashed">
                   <CardContent className="text-center py-12">
                     <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">Custom image upload coming soon</p>
+                    <p className="text-muted-foreground">
+                      Custom image upload coming soon
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      For now, you can use Unsplash images or enter a direct image URL
+                      For now, you can use Unsplash images or enter a direct
+                      image URL
                     </p>
                   </CardContent>
                 </Card>
@@ -525,7 +578,9 @@ function SiteSettingsContent() {
                         id="themeColor"
                         type="color"
                         value={formData.themeColor}
-                        onChange={(e) => handleInputChange("themeColor", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("themeColor", e.target.value)
+                        }
                         className="w-full h-10"
                       />
                     </div>
@@ -535,7 +590,9 @@ function SiteSettingsContent() {
                         id="backgroundColor"
                         type="color"
                         value={formData.backgroundColor}
-                        onChange={(e) => handleInputChange("backgroundColor", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("backgroundColor", e.target.value)
+                        }
                         className="w-full h-10"
                       />
                     </div>
@@ -545,7 +602,9 @@ function SiteSettingsContent() {
                         id="textColor"
                         type="color"
                         value={formData.textColor}
-                        onChange={(e) => handleInputChange("textColor", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("textColor", e.target.value)
+                        }
                         className="w-full h-10"
                       />
                     </div>
@@ -558,7 +617,9 @@ function SiteSettingsContent() {
                   </Label>
                   <Select
                     value={formData.fontFamily}
-                    onValueChange={(value) => handleInputChange("fontFamily", value)}
+                    onValueChange={(value) =>
+                      handleInputChange("fontFamily", value)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a font" />
@@ -566,7 +627,9 @@ function SiteSettingsContent() {
                     <SelectContent>
                       {availableFonts.map((font) => (
                         <SelectItem key={font.value} value={font.value}>
-                          <span style={{ fontFamily: font.value }}>{font.name}</span>
+                          <span style={{ fontFamily: font.value }}>
+                            {font.name}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -574,7 +637,7 @@ function SiteSettingsContent() {
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleSubmit}
                 className="w-full mt-6 flex items-center gap-2"
                 disabled={updateConfigMutation.isPending}
@@ -610,23 +673,29 @@ function SiteSettingsContent() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div 
+              <div
                 className="p-6 rounded-lg border relative overflow-hidden"
-                style={{ 
-                  backgroundColor: formData.backgroundType === "solid" ? formData.backgroundColor : "#FFFFFF",
+                style={{
+                  backgroundColor:
+                    formData.backgroundType === "solid"
+                      ? formData.backgroundColor
+                      : "#FFFFFF",
                   color: formData.textColor,
-                  backgroundImage: formData.backgroundType === "unsplash" && formData.backgroundImageUrl 
-                    ? `url(${formData.backgroundImageUrl})` 
-                    : undefined,
+                  backgroundImage:
+                    formData.backgroundType === "unsplash" &&
+                    formData.backgroundImageUrl
+                      ? `url(${formData.backgroundImageUrl})`
+                      : undefined,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   backgroundRepeat: "no-repeat",
                   fontFamily: formData.fontFamily,
                 }}
               >
-                {formData.backgroundType === "unsplash" && formData.backgroundImageUrl && (
-                  <div className="absolute inset-0 bg-black/20" />
-                )}
+                {formData.backgroundType === "unsplash" &&
+                  formData.backgroundImageUrl && (
+                    <div className="absolute inset-0 bg-black/20" />
+                  )}
                 <div className="relative z-10">
                   <div className="text-center space-y-4">
                     <Avatar className="h-16 w-16 mx-auto">
@@ -636,7 +705,7 @@ function SiteSettingsContent() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h2 
+                      <h2
                         className="text-xl font-bold"
                         style={{ color: formData.themeColor }}
                       >
@@ -647,7 +716,12 @@ function SiteSettingsContent() {
                       </p>
                       {formData.selectedTheme && (
                         <p className="text-xs opacity-60 mt-1">
-                          Theme: {themePresets.find(t => t.id === formData.selectedTheme)?.name}
+                          Theme:{" "}
+                          {
+                            themePresets.find(
+                              (t) => t.id === formData.selectedTheme
+                            )?.name
+                          }
                         </p>
                       )}
                       {formData.layoutType && (

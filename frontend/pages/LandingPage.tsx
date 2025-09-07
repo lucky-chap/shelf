@@ -18,12 +18,9 @@ import { trackPageView, generateVisitorId } from "../utils/analytics";
 import { themePresets } from "../components/ThemePresetSelector";
 import { layoutOptions } from "../components/LayoutSelector";
 import backend from "~backend/client";
-import { useStripePublishableKey } from "@/hooks/useStripe";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 function LandingPageContent() {
-  const { data, isLoading, isError } = useStripePublishableKey();
-
   const configQuery = useQuery({
     queryKey: ["config"],
     queryFn: async () => {

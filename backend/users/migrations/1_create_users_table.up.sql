@@ -1,7 +1,7 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  display_name VARCHAR(100) NOT NULL,
+  username VARCHAR(200) UNIQUE NOT NULL,
+  display_name VARCHAR(200) NOT NULL,
   bio TEXT,
   avatar_url TEXT,
   theme_color VARCHAR(7) DEFAULT '#3B82F6',

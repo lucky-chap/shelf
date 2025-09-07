@@ -55,11 +55,10 @@ import DraggableProduct from "./DraggableProduct";
 import { CardLoadingSkeleton } from "./LoadingSkeleton";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorBoundary from "./ErrorBoundary";
-import { isStripeConfigured } from "../config";
 import React from "react";
 import backend from "~backend/client";
 import { truncateMiddle } from "@/utils/tools";
-import { useStripePublishableKey } from "@/hooks/useStripe";
+import { useStripeSecretKey } from "@/hooks/useStripe";
 
 interface ProductFormData {
   title: string;
@@ -104,11 +103,7 @@ const ProductForm = React.memo<ProductFormProps>(
     onCoverImageSelect,
     formatFileSize,
   }) => {
-    const {
-      data: stripePublishableKey,
-      isLoading,
-      error,
-    } = useStripePublishableKey();
+    const { data: isStripeConfigured, isLoading, error } = useStripeSecretKey();
     return (
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -155,19 +150,12 @@ const ProductForm = React.memo<ProductFormProps>(
           <p className="text-xs text-muted-foreground">
             Set to $0.00 for free products. Paid products must be at least
             $1.00.
-            {!isStripeConfigured() && (
+            {!isStripeConfigured && (
               <span className="text-destructive">
                 {" "}
                 (Stripe not configured - only free products will work)
               </span>
             )}
-            {/* {stripePublishableKey == undefined ||
-              (typeof stripePublishableKey !== "string" && (
-                <span className="text-destructive">
-                  {" "}
-                  (Stripe not configured - only free products will work)
-                </span>
-              ))} */}
           </p>
         </div>
 

@@ -5,7 +5,15 @@ async function fetchUnsplashAccessKey() {
   const res = await backend.site.getFrontendKeys();
   if (!res) throw new Error("Failed to fetch Unsplash access key from backend");
 
-  return res.unsplashAccessKey;
+  if (
+    !res.unsplashAccessKey ||
+    typeof res.unsplashAccessKey !== "string" ||
+    !res.unsplashAccessKey.trim()
+  ) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 export function useUnsplashAccessKey() {

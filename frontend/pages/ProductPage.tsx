@@ -33,10 +33,11 @@ import ActiveUsersCounter from "../components/ActiveUsersCounter";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { trackPageView } from "../utils/analytics";
-import { isStripeConfigured } from "../config";
 import backend from "~backend/client";
+import { useStripeSecretKey } from "@/hooks/useStripe";
 
 function ProductPageContent() {
+  const { data: isStripeConfigured } = useStripeSecretKey();
   const { id } = useParams<{ id: string }>();
   const [email, setEmail] = useState("");
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -153,7 +154,7 @@ function ProductPageContent() {
       downloadMutation.mutate({ productId: product.id });
     } else {
       // Paid product - start checkout
-      if (!isStripeConfigured()) {
+      if (!isStripeConfigured) {
         toast({
           title: "Payment Not Available",
           description: "Stripe is not configured for payments.",
@@ -406,7 +407,7 @@ function ProductPageContent() {
                       )}
                     </Button>
 
-                    {product.priceCents > 0 && !isStripeConfigured() && (
+                    {product.priceCents > 0 && !isStripeConfigured && (
                       <div className="text-center p-4 bg-destructive/10 rounded-lg">
                         <AlertCircle className="h-5 w-5 text-destructive mx-auto mb-2" />
                         <p className="text-sm text-destructive">

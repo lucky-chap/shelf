@@ -1,12 +1,12 @@
 -- Create products table for digital store
 CREATE TABLE products (
   id BIGSERIAL PRIMARY KEY,
-  title VARCHAR(200) NOT NULL,
+  title VARCHAR(300) NOT NULL,
   description TEXT,
   price_cents INTEGER NOT NULL DEFAULT 0, -- Price in cents (0 for free, minimum 100 for $1)
   cover_image_url TEXT, -- URL to cover image in object storage
   file_url TEXT NOT NULL, -- URL to downloadable file in object storage
-  file_name VARCHAR(255) NOT NULL, -- Original filename
+  file_name TEXT NOT NULL, -- Original filename
   file_size BIGINT NOT NULL DEFAULT 0, -- File size in bytes
   is_active BOOLEAN NOT NULL DEFAULT true,
   sort_order INTEGER NOT NULL DEFAULT 0,
@@ -19,9 +19,9 @@ CREATE TABLE products (
 CREATE TABLE purchases (
   id BIGSERIAL PRIMARY KEY,
   product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  stripe_session_id VARCHAR(255), -- Stripe checkout session ID (null for free products)
-  stripe_payment_intent_id VARCHAR(255), -- Stripe payment intent ID
-  customer_email VARCHAR(255), -- Customer email from Stripe or form
+  stripe_session_id VARCHAR(500), -- Stripe checkout session ID (null for free products)
+  stripe_payment_intent_id VARCHAR(500), -- Stripe payment intent ID
+  customer_email VARCHAR(500), -- Customer email from Stripe or form
   amount_paid_cents INTEGER NOT NULL DEFAULT 0, -- Amount paid in cents
   purchase_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   download_count INTEGER NOT NULL DEFAULT 0, -- How many times this purchase was downloaded

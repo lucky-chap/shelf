@@ -3,7 +3,7 @@ CREATE TABLE active_users (
   id BIGSERIAL PRIMARY KEY,
   visitor_id VARCHAR(100) NOT NULL,
   last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  page VARCHAR(200) DEFAULT '/',
+  page VARCHAR(300) DEFAULT '/',
   user_agent TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

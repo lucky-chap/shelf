@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Download, DollarSign, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { isStripeConfigured } from "../config";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +14,10 @@ import {
 import { useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import backend from "~backend/client";
+import { useStripeSecretKey } from "@/hooks/useStripe";
 
 export default function ProductsSection() {
+  const { data: isStripeConfigured, error, isLoading } = useStripeSecretKey();
   const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
   const [downloadData, setDownloadData] = useState<{
     url: string;
@@ -98,7 +99,7 @@ export default function ProductsSection() {
       downloadMutation.mutate(product.id);
     } else {
       // Paid product - start checkout
-      if (!isStripeConfigured()) {
+      if (!isStripeConfigured) {
         toast({
           title: "Payment Not Available",
           description: "Stripe is not configured for payments.",

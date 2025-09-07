@@ -1,9 +1,14 @@
 import { api } from "encore.dev/api";
-import { stripePublishableKey, unsplashAccessKey } from "../store/config";
+import {
+  stripePublishableKey,
+  unsplashAccessKey,
+  stripeSecretKey,
+} from "../store/config";
 
 export interface GetFrontendKeysResponse {
   publishableKey: string;
   unsplashAccessKey: string;
+  secretKey: string;
 }
 
 // Expose a GET endpoint to fetch the key
@@ -12,11 +17,17 @@ export const getFrontendKeys = api<void, GetFrontendKeysResponse>(
   async () => {
     const publishableKey = stripePublishableKey();
     const unsplashAccessKeyValue = unsplashAccessKey();
-    if (!publishableKey || !unsplashAccessKeyValue) {
+    const secretKey = stripeSecretKey();
+
+    if (!publishableKey || !unsplashAccessKeyValue || !secretKey) {
       throw new Error(
-        "Stripe publishable key or Unsplash access key is not configured"
+        "Unsplash access key or Stripe secret key is not configured"
       );
     }
-    return { publishableKey, unsplashAccessKey: unsplashAccessKeyValue };
+    return {
+      publishableKey,
+      unsplashAccessKey: unsplashAccessKeyValue,
+      secretKey,
+    };
   }
 );
