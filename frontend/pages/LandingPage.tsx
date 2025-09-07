@@ -299,13 +299,7 @@ function LandingPageContent() {
             </div>
 
             {/* Profile Section */}
-            <Card
-            // className={
-            //   config.backgroundType === "unsplash"
-            //     ? "backdrop-blur-sm bg-white/90"
-            //     : ""
-            // }
-            >
+            <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <Avatar
