@@ -2,7 +2,7 @@ import { api, APIError } from "encore.dev/api";
 import { storeDB } from "./db";
 import { Header } from "encore.dev/api";
 
-import { stripeSecretKey, stripeWebhookSecret } from "./config"
+import { stripeSecretKey, stripeWebhookSecret } from "./config";
 
 export interface StripeWebhookRequest {
   stripeSignature: Header<"Stripe-Signature">;
@@ -36,7 +36,7 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
       // Import Stripe dynamically
       const Stripe = (await import("stripe")).default;
       const stripe = new Stripe(secretKey, {
-        apiVersion: "2023-10-16"
+        apiVersion: "2025-08-27.basil",
       });
 
       // Verify webhook signature
@@ -46,18 +46,23 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
         webhookSecret
       );
 
-      console.log("Processing Stripe webhook event:", event.type, "ID:", event.id);
+      console.log(
+        "Processing Stripe webhook event:",
+        event.type,
+        "ID:",
+        event.id
+      );
 
       // Handle the checkout session completed event
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as any;
-        
+
         console.log("Processing checkout session:", session.id);
         console.log("Session metadata:", session.metadata);
         console.log("Session customer details:", session.customer_details);
         console.log("Session amount total:", session.amount_total);
         console.log("Session payment intent:", session.payment_intent);
-        
+
         // Extract product ID from metadata
         const productId = parseInt(session.metadata?.productId);
         if (!productId) {
@@ -66,18 +71,33 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
         }
 
         // Get product details
-        const product = await storeDB.queryRow<{ title: string; priceCents: number }>`
+        const product = await storeDB.queryRow<{
+          title: string;
+          priceCents: number;
+        }>`
           SELECT title, price_cents as "priceCents"
           FROM products 
           WHERE id = ${productId}
         `;
 
         if (!product) {
-          console.error("Product not found for session:", session.id, "productId:", productId);
+          console.error(
+            "Product not found for session:",
+            session.id,
+            "productId:",
+            productId
+          );
           return { received: true };
         }
 
-        console.log("Recording purchase for session:", session.id, "product:", productId, "title:", product.title);
+        console.log(
+          "Recording purchase for session:",
+          session.id,
+          "product:",
+          productId,
+          "title:",
+          product.title
+        );
 
         // Check if purchase already exists to avoid duplicates
         const existingPurchase = await storeDB.queryRow<{ id: number }>`
@@ -105,7 +125,9 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
             ${productId},
             ${session.id},
             ${session.payment_intent || null},
-            ${session.customer_details?.email || session.customer_email || null},
+            ${
+              session.customer_details?.email || session.customer_email || null
+            },
             ${session.amount_total || product.priceCents},
             NOW(),
             0,
@@ -113,10 +135,18 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
           )
         `;
 
-        console.log("Purchase recorded successfully for session:", session.id, "product:", productId);
+        console.log(
+          "Purchase recorded successfully for session:",
+          session.id,
+          "product:",
+          productId
+        );
 
         // Verify the purchase was created
-        const verifyPurchase = await storeDB.queryRow<{ id: number; productId: number }>`
+        const verifyPurchase = await storeDB.queryRow<{
+          id: number;
+          productId: number;
+        }>`
           SELECT id, product_id as "productId"
           FROM purchases 
           WHERE stripe_session_id = ${session.id} AND product_id = ${productId}
@@ -125,7 +155,10 @@ export const stripeWebhook = api<StripeWebhookRequest, StripeWebhookResponse>(
         if (verifyPurchase) {
           console.log("Purchase verification successful:", verifyPurchase);
         } else {
-          console.error("Purchase verification failed for session:", session.id);
+          console.error(
+            "Purchase verification failed for session:",
+            session.id
+          );
         }
       }
 
