@@ -70,7 +70,7 @@ Most existing open-source link-in-bio solutions feel outdated or lack key featur
 
 - Download and install Encore at [Encore](https://encore.dev)
 - Download and install Bun at [Bun](https://bun.sh)
-- Download and install Stripe CLI for your platform [Stripe CLI](https://docs.stripe.com/stripe-cli/installv)
+- Download and install Stripe CLI for your platform [Stripe CLI](https://docs.stripe.com/stripe-cli/install)
 - Download and install Docker Desktop at [Docker](https://www.docker.com/)
 
 ### 2. Cloning & Installation
@@ -123,17 +123,7 @@ encore secrets set --type local,dev,pr,prod UNSPLASH_ACCESS_KEY
 
 #### Frontend Variables
 
-`cd` into the `frontend` folder
-
-Create a `.env` file and populate with the following:
-
-```bash
-VITE_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
-```
-
-```bash
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key
-```
+There are no frontend variables used in this project
 
 ### 6. Running the app
 
