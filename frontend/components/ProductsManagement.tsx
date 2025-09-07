@@ -59,6 +59,7 @@ import { isStripeConfigured } from "../config";
 import React from "react";
 import backend from "~backend/client";
 import { truncateMiddle } from "@/utils/tools";
+import { useStripePublishableKey } from "@/hooks/useStripe";
 
 interface ProductFormData {
   title: string;
@@ -102,154 +103,169 @@ const ProductForm = React.memo<ProductFormProps>(
     onFileSelect,
     onCoverImageSelect,
     formatFileSize,
-  }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title *</Label>
-        <Input
-          id="title"
-          placeholder="My Digital Product"
-          value={formData.title}
-          onChange={(e) => onInputChange("title", e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          placeholder="Describe your product..."
-          value={formData.description}
-          onChange={(e) => onInputChange("description", e.target.value)}
-          rows={3}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="price">Price</Label>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">$</span>
+  }) => {
+    const {
+      data: stripePublishableKey,
+      isLoading,
+      error,
+    } = useStripePublishableKey();
+    return (
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="title">Title *</Label>
           <Input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={formData.priceCents / 100}
-            onChange={(e) =>
-              onInputChange(
-                "priceCents",
-                Math.round(parseFloat(e.target.value || "0") * 100)
-              )
-            }
+            id="title"
+            placeholder="My Digital Product"
+            value={formData.title}
+            onChange={(e) => onInputChange("title", e.target.value)}
+            required
           />
         </div>
-        <p className="text-xs text-muted-foreground">
-          Set to $0.00 for free products. Paid products must be at least $1.00.
-          {!isStripeConfigured() && (
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            placeholder="Describe your product..."
+            value={formData.description}
+            onChange={(e) => onInputChange("description", e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="price">Price</Label>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">$</span>
+            <Input
+              id="price"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.priceCents / 100}
+              onChange={(e) =>
+                onInputChange(
+                  "priceCents",
+                  Math.round(parseFloat(e.target.value || "0") * 100)
+                )
+              }
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Set to $0.00 for free products. Paid products must be at least
+            $1.00.
+            {/* {!isStripeConfigured() && (
             <span className="text-destructive">
               {" "}
               (Stripe not configured - only free products will work)
             </span>
-          )}
-        </p>
-      </div>
+          )} */}
+            {stripePublishableKey == undefined ||
+              (typeof stripePublishableKey !== "string" && (
+                <span className="text-destructive">
+                  {" "}
+                  (Stripe not configured - only free products will work)
+                </span>
+              ))}
+          </p>
+        </div>
 
-      <div className="space-y-2">
-        <Label>Product File *</Label>
-        {editingProduct ? (
-          <div className="p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{formData.fileName}</span>
-              <Badge variant="secondary">
-                {formatFileSize(formData.fileSize)}
-              </Badge>
+        <div className="space-y-2">
+          <Label>Product File *</Label>
+          {editingProduct ? (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{formData.fileName}</span>
+                <Badge variant="secondary">
+                  {formatFileSize(formData.fileSize)}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Product files cannot be changed after creation. To use a
+                different file, create a new product.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Product files cannot be changed after creation. To use a different
-              file, create a new product.
-            </p>
-          </div>
-        ) : (
-          <>
-            <Input
-              type="file"
-              onChange={onFileSelect}
-              disabled={fileUpload.uploading}
-              accept=".pdf,.zip,.png,.jpg,.jpeg,.gif,.mp4,.mp3,.txt,.doc,.docx,.xls,.xlsx"
-            />
-            {fileUpload.uploading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <LoadingSpinner size="sm" />
-                Uploading file...
-              </div>
-            )}
-            {formData.fileUrl && (
-              <div className="p-3 bg-muted rounded-lg">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium line-clamp-1">
-                    {truncateMiddle(formData.fileName, 20)}
-                  </span>
-                  <Badge variant="secondary">
-                    {formatFileSize(formData.fileSize)}
-                  </Badge>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label>Cover Image (Optional)</Label>
-        <Input
-          type="file"
-          onChange={onCoverImageSelect}
-          disabled={coverImageUpload.uploading}
-          accept="image/*"
-        />
-        {coverImageUpload.uploading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <LoadingSpinner size="sm" />
-            Uploading cover image...
-          </div>
-        )}
-        {formData.coverImageUrl && (
-          <div className="p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded overflow-hidden">
-                <img
-                  src={formData.coverImageUrl}
-                  alt="Cover"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <span className="text-sm text-muted-foreground">
-                Cover image uploaded
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <DialogFooter>
-        <Button
-          type="submit"
-          disabled={isSubmitting || (!editingProduct && !formData.fileUrl)}
-          className="w-full"
-        >
-          {isSubmitting ? (
-            <LoadingSpinner size="sm" text={`${title}...`} />
           ) : (
-            title
+            <>
+              <Input
+                type="file"
+                onChange={onFileSelect}
+                disabled={fileUpload.uploading}
+                accept=".pdf,.zip,.png,.jpg,.jpeg,.gif,.mp4,.mp3,.txt,.doc,.docx,.xls,.xlsx"
+              />
+              {fileUpload.uploading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LoadingSpinner size="sm" />
+                  Uploading file...
+                </div>
+              )}
+              {formData.fileUrl && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium line-clamp-1">
+                      {truncateMiddle(formData.fileName, 20)}
+                    </span>
+                    <Badge variant="secondary">
+                      {formatFileSize(formData.fileSize)}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </>
           )}
-        </Button>
-      </DialogFooter>
-    </form>
-  )
+        </div>
+
+        <div className="space-y-2">
+          <Label>Cover Image (Optional)</Label>
+          <Input
+            type="file"
+            onChange={onCoverImageSelect}
+            disabled={coverImageUpload.uploading}
+            accept="image/*"
+          />
+          {coverImageUpload.uploading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <LoadingSpinner size="sm" />
+              Uploading cover image...
+            </div>
+          )}
+          {formData.coverImageUrl && (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded overflow-hidden">
+                  <img
+                    src={formData.coverImageUrl}
+                    alt="Cover"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  Cover image uploaded
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="submit"
+            disabled={isSubmitting || (!editingProduct && !formData.fileUrl)}
+            className="w-full"
+          >
+            {isSubmitting ? (
+              <LoadingSpinner size="sm" text={`${title}...`} />
+            ) : (
+              title
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
+    );
+  }
 );
 
 ProductForm.displayName = "ProductForm";
