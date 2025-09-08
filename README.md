@@ -1,16 +1,19 @@
 # `shelf🔗⚡`
 
-Transforming a static page into a dynamic experience
+**Transforming a static page into a dynamic experience**
+
+![My demo page](image.png)
 
 ## Table of Contents
 
-| Section                                 | Description                             |
-| --------------------------------------- | --------------------------------------- |
-| [Introduction](#introduction)           | Brief overview of what the project does |
-| [Features](#features)                   | Highlight key functionalities           |
-| [Local Development](#local-development) | How to install and run the project      |
-| [Contributing](#contributing)           | How others can help with development    |
-| [License](#license)                     | Licensing information                   |
+| Section                                   | Description                                        |
+| ----------------------------------------- | -------------------------------------------------- |
+| [Introduction](#introduction)             | Brief overview of what the project does            |
+| [Features](#features)                     | Highlight key functionalities                      |
+| [Local Development](#local-development)   | How to install and run the project                 |
+| [Hackathon Criteria](#hackathon-criteria) | How my project fits in with the hackathon criteria |
+| [Contributing](#contributing)             | How others can help with development               |
+| [License](#license)                       | Licensing information                              |
 
 ## Introduction
 
@@ -56,6 +59,7 @@ Most existing open-source link-in-bio solutions feel outdated or lack key featur
   - No third-party auth required
 
 - `🩺Analytics`
+  - Live visitor count
   - Total link clicks
   - Total guest messages and pending moderation count
   - Product sales and revenue
@@ -141,10 +145,53 @@ in your terminal
 encore run
 ```
 
-## More
+## Hackathon Criteria
 
-You can also check out [DEVELOPMENT.md](./DEVELOPMENT.md) for more details on how to run
+### 🔨 Impact
+
+Most link-in-bio tools lock essential features behind subscriptions.
+This project solves vendor lock-in by giving creators, NGOs, and communities an open, free, self-hosted platform with all the tools they need:
+
+- Links + Store + Guestbook + Analytics in one place
+- Data ownership and no hidden fees
+- Accessible to anyone from influencers to non-profits
+- No extra fees paid for your own content
+- Foster community with Guestbook
+
+### ✏️ Execution
+
+- Drag-and-drop links and products with live previews for smooth UX
+- Fast and reliable backend with database migrations
+- Secure Stripe integration for payments
+
+### ⚡ Innovation
+
+- First open-source tool combining links, store, guestbook, and advanced analytics
+- Live visitor count. Creates a sense of urgency and excitement which is perfect for product drops, campaigns, or timed promotions.
+- Unique guestbook feature turns static bios into interactive community hubs
+- Creative monetization via digital downloads directly on your page
+- Modular architecture (links, products, guestbook, analytics) for easy extension
+
+### 💯 Completeness
+
+- Functional demo with links, products, guestbook, and analytics (only for hackathon judges)
+- Clear documentation for easy set-up
+- Password-protected admin, no third-party login needed
+- Organized project structure with /frontend, /backend
+
+## Contributing
+
+- Fork this repository;
+- Create your branch: git checkout -b my-new-feature;
+- Commit your changes: git commit -m 'Add some feature';
+- Push to the branch: git push origin my-new-feature.
+
+After your pull request is merged, you can safely delete your branch.
 
 ## License
 
-View [LICENSE](./LICENSE)
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for more information.
+
+## More
+
+You can also check out [DEVELOPMENT.md](./DEVELOPMENT.md) for more details on how to run
